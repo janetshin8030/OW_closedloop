@@ -70,7 +70,8 @@ rapid_temp_increase_per_second_shutoff_C = 5 # Rapid temperature climbing shutof
 peak_to_peak_voltage = voltage * 2 # Peak to peak voltage for the pulse
 
 here = Path(__file__).parent.resolve()
-db_path = here / ".." / "db_dvc"
+#db_path = here / ".." / "db_dvc"
+db_path = r"C:\Users\jshin\Downloads\OpenLIFU-python\OpenLIFU-python\db_dvc"
 db = Database(db_path)
 arr = db.load_transducer(f"openlifu_{num_modules}x400_evt1")
 arr.sort_by_pin()
