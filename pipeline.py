@@ -7,7 +7,7 @@ import logging
 
 import numpy as np
 from scipy.signal import welch
-from pylsl import StreamInlet, resolve_streams, StreamOutlet, StreamInfo
+from pylsl import StreamInlet, resolve_byprop, StreamOutlet, StreamInfo
 from collections import deque
 
 from openlifu.io.LIFUInterface import LIFUInterface
@@ -134,7 +134,7 @@ def main():
 
     # 2) Connect to EEG LSL stream
     print("Resolving EEG stream...")
-    streams = resolve_streams('type', 'EEG')
+    streams = resolve_byprop('name', 'PsychoPyMarkers', timeout=10)
     if not streams:
         print("No EEG LSL stream found. Is the Unicorn LSL Streamer running?")
         sys.exit(1)
