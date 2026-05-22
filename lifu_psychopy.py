@@ -59,17 +59,11 @@ use_external_power_supply = False
 
 peak_to_peak_voltage = voltage * 2
 
-# -------------------------------------------------------
-# Load transducer geometry
-# -------------------------------------------------------
 db_path = Path(r"C:\Users\jshin\Downloads\OpenLIFU-python\OpenLIFU-python\db_dvc")
 db = Database(db_path)
 arr = db.load_transducer(f"openlifu_{num_modules}x400_evt1")
 arr.sort_by_pin()
 
-# -------------------------------------------------------
-# Compute delays
-# -------------------------------------------------------
 target = Point(position=(xInput, yInput, zInput), units="mm")
 focus = target.get_position(units="mm")
 
@@ -81,6 +75,10 @@ tof = distances * 1e-3 / speed_of_sound
 delays = tof.max() - tof
 
 apodizations = np.ones((1, arr.numelements()))
+
+#----------------------------------------------- 
+# Setting up LIFU Device
+#-----------------------------------------------
 
 logger.info("Starting LIFU Test Script...")
 interface = LIFUInterface(ext_power_supply=use_external_power_supply)
@@ -155,9 +153,8 @@ else:
 
 logger.info(f'Apodizations: {apodizations}')
 logger.info(f'Delays: {delays}')
-# -------------------------------------------------------
-# Build pulse + sequence
-# -------------------------------------------------------
+
+
 pulse = Pulse(frequency=frequency_kHz * 1e3, duration=duration_msec * 1e-3)
 
 sequence = Sequence(
@@ -200,7 +197,7 @@ inlet = StreamInlet(streams[0])
 logger.info("Connected to PsychoPy marker stream.")
 
 # -------------------------------------------------------
-# Closed-loop sonication logic
+# SONICATION LOGIC WITH PYLSL
 # -------------------------------------------------------
 SONICATION_TIME = 5
 COOLDOWN_TIME = 10
@@ -234,7 +231,7 @@ try:
             time.sleep(SONICATION_TIME)
             interface.stop_sonication()
             lifu_outlet.push_sample(["LIFU_OFF"])
- 
+
             interface.hvcontroller.turn_hv_off()
 
             last_sonication_time = time.time()

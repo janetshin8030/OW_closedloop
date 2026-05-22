@@ -3,7 +3,6 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/n-back-task-with-visual-stimuli" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/openlifu-python" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/stroop" vcs="Git" />
   </component>
 </project>

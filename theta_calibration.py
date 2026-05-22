@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.signal import welch
-from pylsl import StreamInlet, resolve_stream
+from pylsl import StreamInlet, resolve_byprop
 import time
 import json
 
@@ -12,7 +12,7 @@ def compute_theta_power(samples, fs=250):
 
 def collect_baseline(duration_sec=180, fs=250, channel=0):
     print("Looking for EEG stream...")
-    streams = resolve_stream('type', 'EEG')
+    streams = resolve_byprop('type', 'EEG', timeout = 30)
     inlet = StreamInlet(streams[0])
 
     print("EEG stream found. Starting baseline collection.")

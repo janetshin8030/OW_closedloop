@@ -1,37 +1,23 @@
 <!doctype html>
 <html>
-
-<head>
-    <title>N-back [PsychoPy]</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="user-scalable=no">
-
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>untitled [PsychoPy]</title>
     <!-- styles -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
-    <link rel="stylesheet" href="https://lib.pavlovia.org/psychojs.css">
-</head>
-
-<body>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-ui-dist@1.12.1/jquery-ui.min.css">
+    <link rel="stylesheet" href="./lib/psychojs-2026.1.3.css">
+  </head>
+  <body>
     <div id="root"></div>
-     <!-- external libraries -->
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.1/seedrandom.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.8.7/pixi.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/PreloadJS/1.0.1/preloadjs.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.14.2/xlsx.full.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/log4javascript/1.4.9/log4javascript.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tone/13.8.6/Tone.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.1.2/howler.min.js"></script>
-
+    <!-- external libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-ui-dist@1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/preloadjs@1.0.1/lib/preloadjs.min.js"></script>
     <!-- experiment -->
-    <script type='module' src='./N-back.js'></script>
-
-    <!-- older browsers -->
-    <script nomodule type="text/javascript" src="https://unpkg.com/@ungap/url-search-params"></script>
-    <script nomodule type="text/javascript" src="https://lib.pavlovia.org/psychojs.js"></script>
-    <script nomodule type="text/javascript" src="./N-backNoModule.js"></script>
-</body>
-
+    <script src="./untitled.js" type="module"></script>
+    <!-- legacy browsers -->
+    <script src="./lib/psychojs-2026.1.3.iife.js" nomodule></script>
+    <script src="./untitled-legacy-browsers.js" nomodule></script>
+  </body>
 </html>

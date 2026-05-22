@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2026.1.3),
-    on May 19, 2026, at 13:35
+    on May 21, 2026, at 15:33
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -404,6 +404,23 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         languageStyle='LTR',
         depth=0.0);
     resp = keyboard.Keyboard(deviceName='defaultKeyboard')
+    # Run 'Begin Experiment' code from code_2
+    from pylsl import StreamInfo, StreamOutlet, StreamInlet, resolve_byprop
+    
+    # ---- PsychoPy → LIFU stream (send INCORRECT) ----
+    info = StreamInfo('PsychoPyMarkers', 'Markers', 1, 0, 'string')
+    outlet = StreamOutlet(info)
+    print("PsychoPy LSL outlet created.")
+    
+    # ---- LIFU → PsychoPy stream (receive LIFU_ON / LIFU_OFF) ----
+    print("Waiting for LIFUEvents stream...")
+    streams = resolve_byprop('name', 'LIFUEvents', timeout=30)
+    lifu_inlet = StreamInlet(streams[0])
+    print("Connected to LIFUEvents stream.")
+    
+    # storage for last event
+    last_lifu_event = ""
+    
     
     # --- Initialize components for Routine "thanks" ---
     thanksText = visual.TextStim(win=win, name='thanksText',
@@ -718,6 +735,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                         resp.corr = 0
                     # a response ends the routine
                     continueRoutine = False
+            # Run 'Each Frame' code from code_2
+            sample = lifu_inlet.pull_sample(timeout=0.0)
+            if sample:
+                last_lifu_event = sample[0]   # "LIFU_ON" or "LIFU_OFF"
+            
             
             # check for quit (typically the Esc key)
             if defaultKeyboard.getKeys(keyList=["escape"]):
@@ -775,6 +797,21 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         if resp.keys != None:  # we had a response
             trials.addData('resp.rt', resp.rt)
             trials.addData('resp.duration', resp.duration)
+        # Run 'End Routine' code from code_2
+        # Send marker to LIFU if participant was wrong
+        if resp.corr == 0:
+            outlet.push_sample(["INCORRECT"])
+            sonication_duration = 5
+        else:
+            sonication_duration = 0
+        
+        # Log LIFU event received during this trial
+        thisExp.addData('LIFU_event', last_lifu_event)
+        thisExp.addData('sonication_duration', sonication_duration)
+        
+        # Reset for next trial
+        last_lifu_event = ""
+        
         # the Routine "trial" was not non-slip safe, so reset the non-slip timer
         routineTimer.reset()
         # mark thisTrial as finished

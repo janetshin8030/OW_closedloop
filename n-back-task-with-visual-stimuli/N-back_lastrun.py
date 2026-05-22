@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2026.1.3),
-    on May 19, 2026, at 14:06
+    on May 21, 2026, at 16:21
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -378,7 +378,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     
     # --- Initialize components for Routine "Instructions_2" ---
     instructions_2 = visual.TextStim(win=win, name='instructions_2',
-        text='This is the end of N-back-1 trials. You are about to start N-back-2 trials. This means that instead of pressing space whenever the square appears in the same position as on the position on one trial before, you are required to press space whenever the square appears in the same position as on the position two trials before. For example if the square appeared in left down corner on trial 1, you should press space if the square appears in the left down corner on trial 3. Press space to continue.',
+        text='In this 2‑back task, you will see a series of squares appear one at a time on the screen. Your job is to press the match key whenever the current square is the same as the one shown two squares earlier, and do nothing otherwise. Respond as quickly and accurately as you can throughout the sequence.\n\nFor example if the square appeared in left down corner on trial 1, you should press space if the square appears in the left down corner on trial 3. Press space to continue.',
         font='Arial',
         pos=(0, 0), draggable=False, height=0.05, wrapWidth=None, ori=0, 
         color='white', colorSpace='rgb', opacity=1, 
@@ -419,6 +419,19 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         languageStyle='LTR',
         depth=-2.0);
     response_2 = keyboard.Keyboard(deviceName='defaultKeyboard')
+    # Run 'Begin Experiment' code from code_2
+    from pylsl import StreamInfo, StreamOutlet, StreamInlet, resolve_byprop
+    
+    # ---- PsychoPy → LIFU ----
+    info = StreamInfo('PsychoPyMarkers', 'Markers', 1, 0, 'string')
+    outlet = StreamOutlet(info)
+    
+    # ---- LIFU → PsychoPy ----
+    streams = resolve_byprop('name', 'LIFUEvents', timeout=30)
+    lifu_inlet = StreamInlet(streams[0])
+    
+    last_lifu_event = ""
+    
     
     # --- Initialize components for Routine "End" ---
     thank_you = visual.TextStim(win=win, name='thank_you',
@@ -958,6 +971,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                         response_2.corr = 1
                     else:
                         response_2.corr = 0
+            # Run 'Each Frame' code from code_2
+            sample = lifu_inlet.pull_sample(timeout=0.0)
+            if sample:
+                last_lifu_event = sample[0]
+            
             
             # check for quit (typically the Esc key)
             if defaultKeyboard.getKeys(keyList=["escape"]):
@@ -1015,6 +1033,21 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         if response_2.keys != None:  # we had a response
             trials_2.addData('response_2.rt', response_2.rt)
             trials_2.addData('response_2.duration', response_2.duration)
+        # Run 'End Routine' code from code_2
+        # Send marker to LIFU if participant was wrong
+        if response_2.corr == 0:   # <-- change to your actual response component
+            outlet.push_sample(["INCORRECT"])
+            sonication_duration = 5
+        else:
+            sonication_duration = 0
+        
+        # Log LIFU event received during this trial
+        thisExp.addData('LIFU_event', last_lifu_event)
+        thisExp.addData('sonication_duration', sonication_duration)
+        
+        # Reset for next trial
+        last_lifu_event = ""
+        
         # using non-slip timing so subtract the expected duration of this Routine (unless ended on request)
         if N_back_2_trials.maxDurationReached:
             routineTimer.addTime(-N_back_2_trials.maxDuration)
