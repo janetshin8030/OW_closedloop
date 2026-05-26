@@ -27,7 +27,9 @@ from pylsl import StreamInfo, StreamOutlet
 lifu_info = StreamInfo('LIFUEvents', 'Markers', 1, 0, 'string')
 lifu_outlet = StreamOutlet(lifu_info)
 print("LIFU → PsychoPy LSL outlet created.")
-
+"""
+if incorrect on psychopy, will sonicate on LIFU phantom
+"""
 
 # -------------------------------------------------------
 # Logging
