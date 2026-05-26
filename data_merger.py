@@ -1,34 +1,35 @@
 import pandas as pd
+from EEG_lifu import hash_and_test
 
 # Load both files
-eeg = pd.read_csv("thetaPSD_0_20260526_130857.csv")
-lifu = pd.read_csv("lifu_markers.csv")
+eeg = pd.read_csv(f"thetaPSD_{hash_and_test}.csv")
+lifu = pd.read_csv(f"lifu_markers_1_{hash_and_test}.csv")
 
-# Assume EEG 'timestamp' is already relative seconds (0–52)
+# Sort EEG by its relative time column
 eeg = eeg.sort_values("Time")
 
-# Convert LIFU timestamps to relative seconds (start at 0)
+# Sort LIFU by absolute LSL time
 lifu = lifu.sort_values("Time")
+
+# Create relative LIFU time (for alignment)
 lifu["timestamp_rel"] = lifu["Time"] - lifu["Time"].iloc[0]
 
-# For clarity, keep EEG time as 'timestamp'
-# and use LIFU relative time for alignment
-# (rename EEG column if needed)
-eeg_time_col = "Time"          # change if your column is named differently
-lifu_time_col = "timestamp_rel"
-
-# Merge on nearest relative time (allow e.g. 0.1 s tolerance)
+# Merge on nearest relative time
 merged = pd.merge_asof(
-    eeg.sort_values(eeg_time_col),
-    lifu[[lifu_time_col, "marker"]].sort_values(lifu_time_col),
-    left_on=eeg_time_col,
-    right_on=lifu_time_col,
+    eeg.sort_values("Time"),
+    lifu[["timestamp_rel", "Time", "marker"]].sort_values("timestamp_rel"),
+    left_on="Time",
+    right_on="timestamp_rel",
     direction="nearest",
-    tolerance=0.1  # 100 ms
+    tolerance=0.1
 )
 
-# Drop helper column if you like
-merged = merged.drop(columns=["timestamp_rel"])
+merged = merged.rename(columns={
+    "Time_x": "EEG_time",
+    "Time_y": "LIFU_LSL_time"
+})
 
-merged.to_csv("combined_eeg_lifu_1.csv", index=False)
-print("Merged file saved as combined_eeg_lifu.csv")
+
+# Save
+merged.to_csv(f"combined_eeg_lifu_lsl_{hash_and_test}.csv", index=False)
+print(f"Merged file saved as combined_eeg_lifu_lsl_{hash_and_test}.csv")

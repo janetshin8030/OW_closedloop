@@ -25,6 +25,8 @@ from openlifu.geo import Point
 from openlifu.io.LIFUInterface import LIFUInterface
 from openlifu.plan.solution import Solution
 
+hash_and_test = "stroop_123"
+
 # -------------------------------------------------------
 # Logging
 # -------------------------------------------------------
@@ -56,15 +58,15 @@ def record_lifu_numeric():
     inlet = StreamInlet(streams[0])
     print("Connected to LIFU_numeric stream.")
 
-    with open("lifu_markers.csv", "w", newline="") as f:
+    with open(f"lifu_markers_1_{hash_and_test}.csv", "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["Time", "marker"])
+        writer.writerow(["Time", "marker", "LSL_timestamp"])  # Header
 
         while True:
             sample, ts= inlet.pull_sample(timeout=1.0)
             if sample:
                 relative_ts = ts - eeg_start_lsl
-                writer.writerow([relative_ts, sample[0]])
+                writer.writerow([relative_ts, sample[0],ts])
                 f.flush()              # <--- forces Python to write
                 os.fsync(f.fileno())   # <--- forces OS to write
                 print("Wrote marker:", sample[0])
@@ -303,7 +305,7 @@ def run_pipeline():
     )
 
     sender = gp.LSLSender()
-    writer = gp.CsvWriter(file_name=f"thetaPSD_{hash_value}.csv")
+    writer = gp.CsvWriter(file_name=f"thetaPSD_{hash_and_test}.csv")
 
 
     p.connect(source, notch60)
@@ -342,9 +344,11 @@ if __name__ == "__main__":
         lifu_record_thread = threading.Thread(target=record_lifu_numeric, daemon=True)
         lifu_record_thread.start()
 
-        # Start gp.Pype pipeline
+        # Start g.Pype pipeline
         eeg_start_lsl = local_clock()
         run_pipeline()
+
+
 
     except KeyboardInterrupt:
         logger.info("Interrupted by user, turning HV off and exiting...")
