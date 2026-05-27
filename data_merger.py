@@ -1,14 +1,14 @@
 import pandas as pd
-from EEG_lifu import hash_and_test
+from main_pipeline import hash_and_test
+
+# combines both files into one, matching the EEG time with the nearest LIFU marker time, and saves it as a new CSV file. 
 
 # Load both files
 eeg = pd.read_csv(f"thetaPSD_{hash_and_test}.csv")
 lifu = pd.read_csv(f"lifu_markers_1_{hash_and_test}.csv")
 
-# Sort EEG by its relative time column
-eeg = eeg.sort_values("Time")
 
-# Sort LIFU by absolute LSL time
+eeg = eeg.sort_values("Time")
 lifu = lifu.sort_values("Time")
 
 # Create relative LIFU time (for alignment)

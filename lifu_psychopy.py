@@ -23,7 +23,7 @@ from openlifu.io.LIFUInterface import LIFUInterface
 from openlifu.plan.solution import Solution
 from pylsl import StreamInfo, StreamOutlet
 
-# ---- LIFU → PsychoPy stream ----
+# LIFU -> psychopy LSL outliet
 lifu_info = StreamInfo('LIFUEvents', 'Markers', 1, 0, 'string')
 lifu_outlet = StreamOutlet(lifu_info)
 print("LIFU → PsychoPy LSL outlet created.")
@@ -31,9 +31,7 @@ print("LIFU → PsychoPy LSL outlet created.")
 if incorrect on psychopy, will sonicate on LIFU phantom
 """
 
-# -------------------------------------------------------
-# Logging
-# -------------------------------------------------------
+# Logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 if not logger.hasHandlers():
@@ -44,9 +42,7 @@ if not logger.hasHandlers():
 
 log_interval = 1
 
-# -------------------------------------------------------
 # Beamforming parameters
-# -------------------------------------------------------
 xInput = -10
 yInput = 0
 zInput = 50
@@ -78,9 +74,7 @@ delays = tof.max() - tof
 
 apodizations = np.ones((1, arr.numelements()))
 
-#----------------------------------------------- 
-# Setting up LIFU Device
-#-----------------------------------------------
+#LIFU setup
 
 logger.info("Starting LIFU Test Script...")
 interface = LIFUInterface(ext_power_supply=use_external_power_supply)
@@ -186,9 +180,7 @@ interface.set_solution(
 
 logger.info("Beamforming solution loaded.")
 
-# -------------------------------------------------------
-# Connect to PsychoPy LSL stream
-# -------------------------------------------------------
+# connect to psychopy marker stream
 logger.info("Waiting for PsychoPy marker stream...")
 streams = resolve_byprop('name', 'PsychoPyMarkers', timeout=30)
 if not streams:
@@ -198,9 +190,7 @@ if not streams:
 inlet = StreamInlet(streams[0])
 logger.info("Connected to PsychoPy marker stream.")
 
-# -------------------------------------------------------
-# SONICATION LOGIC WITH PYLSL
-# -------------------------------------------------------
+# sonication logic based on INCORRECT
 SONICATION_TIME = 5
 COOLDOWN_TIME = 10
 last_sonication_time = 0

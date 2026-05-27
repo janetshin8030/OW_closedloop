@@ -5,9 +5,9 @@ import time
 from pylsl import StreamInlet, resolve_byprop
 import json
 import threading  # Added for non-blocking baseline collection
-from theta_calibration import compute_theta_power
+from data_merger import compute_theta_power
 from hash_function import hash_value
-
+### This file is from the g.Pype training code to test EEG
 
 def collect_baseline(duration_sec=180, fs=250, channel=0):
     print("\n[Baseline] Waiting for pipeline to stabilize (5 seconds)...")

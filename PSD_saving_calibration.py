@@ -4,8 +4,9 @@ import time
 import json
 import threading
 from pylsl import StreamInlet, resolve_byprop
-from theta_calibration import compute_theta_power
+from data_merger import compute_theta_power
 from hash_function import hash_value
+### This file is for individual theta calibration and saving the results to a JSON file. It also includes artifact rejection based on a power threshold.
 
 def collect_baseline(duration_sec=180, fs=250, channel=0):
     print("\n[Baseline] Waiting for pipeline to stabilize (5 seconds)...")

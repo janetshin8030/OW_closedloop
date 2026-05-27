@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import os
 import sys
 import threading
@@ -25,11 +26,11 @@ from openlifu.geo import Point
 from openlifu.io.LIFUInterface import LIFUInterface
 from openlifu.plan.solution import Solution
 
-hash_and_test = "stroop_123"
+# main pipeline from theta detection to LIFU triggering, sends markers to psychopy and EEG files
 
-# -------------------------------------------------------
-# Logging
-# -------------------------------------------------------
+hash_and_test = "stroop_123" # UPDATE EVERY TIME
+
+# logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 if not logger.hasHandlers():
@@ -38,16 +39,16 @@ if not logger.hasHandlers():
     logger.addHandler(handler)
     logger.propagate = False
 
-# -------------------------------------------------------
-# LIFU → PsychoPy stream
-# -------------------------------------------------------
+# Sending markers to psychopy
 lifu_info = StreamInfo('LIFUEvents', 'Markers', 1, 0, 'string')
 lifu_outlet = StreamOutlet(lifu_info)
-logger.info("LIFU → PsychoPy LSL outlet created.")
+logger.info("LIFU to PsychoPy LSL outlet created.") # technically don't need this one
 
 lifu_num_info = StreamInfo('LIFU_numeric', 'Markers', 1, 0, 'float32')
 lifu_num_outlet = StreamOutlet(lifu_num_info)
+logger.info("LIFU to PsychoPy LSL outlet created.") 
 
+#saving markers to csv
 def record_lifu_numeric():
     print("Waiting for LIFU_numeric stream...")
     streams = resolve_byprop("name", "LIFU_numeric", timeout=30)
@@ -72,9 +73,7 @@ def record_lifu_numeric():
                 print("Wrote marker:", sample[0])
 
 
-# -------------------------------------------------------
-# Beamforming parameters
-# -------------------------------------------------------
+# beamforming parameters (demo code)
 xInput = -10
 yInput = 0
 zInput = 50
@@ -200,13 +199,12 @@ interface.set_solution(
 logger.info("Beamforming solution loaded.")
 
 
-# -------------------------------------------------------
-# Theta-based closed-loop logic (using LSL theta stream)
-# -------------------------------------------------------
+# theta sonication loop (eeg + demo code)
 
 SONICATION_TIME = 5
+ARTIFACT_THRESHOLD = 100.0
 COOLDOWN_TIME = 10
-THETA_THRESHOLD_Z = 1.5
+THETA_THRESHOLD_Z = 1.5     # z-score threshold
 SMOOTHING_WINDOW = 5          # samples of decimated theta
 MU = 5.0
 SIGMA = 5.0       # number of decimated samples for baseline
@@ -232,8 +230,12 @@ def theta_trigger_loop():
 
         theta_val = sample[4]
         theta_z = (theta_val - MU) / SIGMA
+        if theta_z > ARTIFACT_THRESHOLD:
+            logger.warning(f"Artifact detected! Theta value {theta_val:.1f} (z={theta_z:.1f}) exceeds threshold. Skipping.")
+            theta_history.append(math.nan)  # Append nan to avoid spikes in smoothed theta
+        else:
+            theta_history.append(theta_z)
 
-        theta_history.append(theta_z)
         if len(theta_history) > SMOOTHING_WINDOW:
             theta_history.pop(0)
 
@@ -261,11 +263,8 @@ def theta_trigger_loop():
             except Exception as e:
                 logger.error(f"Error during theta-triggered sonication: {e}")
 
-# -------------------------------------------------------
-# gp pipeline for theta computation + LSL sender
-# -------------------------------------------------------
+# gp pipeline for EEG headset
 
-hash_value = 0 #set simple unique id
 fs = 250  # set to your actual sampling rate
 
 def run_pipeline():
