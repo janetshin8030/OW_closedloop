@@ -16,6 +16,7 @@ else:
 
 import numpy as np
 from pylsl import StreamInlet, local_clock, resolve_byprop, StreamInfo, StreamOutlet
+from hash_func import hash_and_test
 
 import gpype as gp 
 
@@ -28,7 +29,7 @@ from openlifu.plan.solution import Solution
 
 # main pipeline from theta detection to LIFU triggering, sends markers to psychopy and EEG files
 
-hash_and_test = "stroop_123" # UPDATE EVERY TIME
+#hash_and_test = "stroop_test" # UPDATE EVERY TIME
 
 # logging
 logger = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ def record_lifu_numeric():
 
 
 # beamforming parameters (demo code)
-xInput = -10
+xInput = 0
 yInput = 0
 zInput = 50
 
@@ -201,8 +202,8 @@ logger.info("Beamforming solution loaded.")
 
 # theta sonication loop (eeg + demo code)
 
-SONICATION_TIME = 5
-ARTIFACT_THRESHOLD = 100.0
+SONICATION_TIME = 5 #seconds i believe
+ARTIFACT_THRESHOLD = 10.0
 COOLDOWN_TIME = 10
 THETA_THRESHOLD_Z = 1.5     # z-score threshold
 SMOOTHING_WINDOW = 5          # samples of decimated theta
