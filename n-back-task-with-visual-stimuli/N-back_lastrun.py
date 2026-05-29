@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2026.1.3),
-    on May 21, 2026, at 16:21
+    on May 29, 2026, at 12:36
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -420,17 +420,16 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         depth=-2.0);
     response_2 = keyboard.Keyboard(deviceName='defaultKeyboard')
     # Run 'Begin Experiment' code from code_2
-    from pylsl import StreamInfo, StreamOutlet, StreamInlet, resolve_byprop
+    from pylsl import StreamInlet, resolve_byprop
     
-    # ---- PsychoPy → LIFU ----
-    info = StreamInfo('PsychoPyMarkers', 'Markers', 1, 0, 'string')
-    outlet = StreamOutlet(info)
-    
-    # ---- LIFU → PsychoPy ----
-    streams = resolve_byprop('name', 'LIFUEvents', timeout=30)
-    lifu_inlet = StreamInlet(streams[0])
-    
-    last_lifu_event = ""
+    print("Searching for LIFUEvents stream...")
+    streams = resolve_byprop('name', 'PsychoPy_numeric', timeout=30)
+    if len(streams) == 0:
+        print("ERROR: No psychopy stream found.")
+        lifu_inlet = None
+    else:
+        lifu_inlet = StreamInlet(streams[0])
+        print("Connected to psychopy stream.")
     
     
     # --- Initialize components for Routine "End" ---
@@ -791,6 +790,9 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         response_2.keys = []
         response_2.rt = []
         _response_2_allKeys = []
+        # Run 'Begin Routine' code from code_2
+        last_lifu_event= None
+        last_lifu_time = None
         # store start times for N_back_2_trials
         N_back_2_trials.tStartRefresh = win.getFutureFlipTime(clock=globalClock)
         N_back_2_trials.tStart = globalClock.getTime(format='float')
@@ -972,10 +974,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     else:
                         response_2.corr = 0
             # Run 'Each Frame' code from code_2
-            sample = lifu_inlet.pull_sample(timeout=0.0)
-            if sample:
-                last_lifu_event = sample[0]
-            
+            if lifu_inlet is not None: 
+                sample, ts = lifu_inlet.pull_sample(timeout = 0.0)
+                if sample is not None: 
+                    last_lifu_event = sample[0]
+                    last_lifu_time = ts
             
             # check for quit (typically the Esc key)
             if defaultKeyboard.getKeys(keyList=["escape"]):
@@ -1034,20 +1037,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             trials_2.addData('response_2.rt', response_2.rt)
             trials_2.addData('response_2.duration', response_2.duration)
         # Run 'End Routine' code from code_2
-        # Send marker to LIFU if participant was wrong
-        if response_2.corr == 0:   # <-- change to your actual response component
-            outlet.push_sample(["INCORRECT"])
-            sonication_duration = 5
-        else:
-            sonication_duration = 0
-        
-        # Log LIFU event received during this trial
-        thisExp.addData('LIFU_event', last_lifu_event)
-        thisExp.addData('sonication_duration', sonication_duration)
-        
-        # Reset for next trial
-        last_lifu_event = ""
-        
+        thisExp.addData('LIFU_marker', last_lifu_event)
+        thisExp.addData('LSL_Time', last_lifu_time)
         # using non-slip timing so subtract the expected duration of this Routine (unless ended on request)
         if N_back_2_trials.maxDurationReached:
             routineTimer.addTime(-N_back_2_trials.maxDuration)

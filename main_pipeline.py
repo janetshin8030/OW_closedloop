@@ -29,7 +29,6 @@ from openlifu.plan.solution import Solution
 
 # main pipeline from theta detection to LIFU triggering, sends markers to psychopy and EEG files
 
-#hash_and_test = "stroop_test" # UPDATE EVERY TIME
 
 # logging
 logger = logging.getLogger(__name__)
@@ -40,19 +39,20 @@ if not logger.hasHandlers():
     logger.addHandler(handler)
     logger.propagate = False
 
-# Sending markers to psychopy
-lifu_info = StreamInfo('LIFUEvents', 'Markers', 1, 0, 'string')
-lifu_outlet = StreamOutlet(lifu_info)
+# Sending markers to EEG
+eeg_trigger_info = StreamInfo('EEG_LIFU_events', 'Markers', 1, 0, 'string')
+eeg_trigger_outlet = StreamOutlet(eeg_trigger_info)
 logger.info("LIFU to PsychoPy LSL outlet created.") # technically don't need this one
 
-lifu_num_info = StreamInfo('LIFU_numeric', 'Markers', 1, 0, 'float32')
+#sending markers to psychopy
+lifu_num_info = StreamInfo('PsychoPy_numeric', 'Markers', 1, 0, 'float32')
 lifu_num_outlet = StreamOutlet(lifu_num_info)
 logger.info("LIFU to PsychoPy LSL outlet created.") 
 
 #saving markers to csv
 def record_lifu_numeric():
     print("Waiting for LIFU_numeric stream...")
-    streams = resolve_byprop("name", "LIFU_numeric", timeout=30)
+    streams = resolve_byprop("name", "EEG_LIFU_events", timeout=30)
     if not streams:
         print("No LIFU_numeric stream found.")
         return
@@ -203,12 +203,13 @@ logger.info("Beamforming solution loaded.")
 # theta sonication loop (eeg + demo code)
 
 SONICATION_TIME = 5 #seconds i believe
-ARTIFACT_THRESHOLD = 10.0
 COOLDOWN_TIME = 10
 THETA_THRESHOLD_Z = 1.5     # z-score threshold
-SMOOTHING_WINDOW = 5          # samples of decimated theta
-MU = 5.0
-SIGMA = 5.0       # number of decimated samples for baseline
+MU = 8.35
+SIGMA = 13    
+MAD_THRESHOLD = 6         # for artifact rejection in baseline collection
+INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
+BUFFER_SIZE = 500
 
 def theta_trigger_loop():
     logger.info("Waiting for theta LSL stream (type='EEG')...")
@@ -220,42 +221,55 @@ def theta_trigger_loop():
     inlet = StreamInlet(streams[0])
     logger.info("Connected to EEG LSL stream for theta.")
 
-    theta_history = []
+    #theta_history = []
     last_trigger_time = 0
     logger.info("Starting theta-based closed-loop monitoring...")
-
+    buffer = []
     while True:
         sample, ts = inlet.pull_sample(timeout=1.0)
         if sample is None:
             continue
 
-        theta_val = sample[4]
-        theta_z = (theta_val - MU) / SIGMA
-        if theta_z > ARTIFACT_THRESHOLD:
-            logger.warning(f"Artifact detected! Theta value {theta_val:.1f} (z={theta_z:.1f}) exceeds threshold. Skipping.")
-            theta_history.append(math.nan)  # Append nan to avoid spikes in smoothed theta
-        else:
-            theta_history.append(theta_z)
+        theta_val = sample[3]
+        # update rolling buffer
+        # not enough data yet → just collect
+        if len(buffer) < 50:
+            if theta_val < INITIAL_CUTOFF:
+                buffer.append(theta_val)
+            continue
+        if len(buffer) > BUFFER_SIZE:
+            buffer.pop(0)
 
-        if len(theta_history) > SMOOTHING_WINDOW:
-            theta_history.pop(0)
 
-        smoothed_theta = np.mean(theta_history)
+        arr = np.array(buffer)
+        median = np.median(arr)
+        mad = np.median(np.abs(arr - median)) + 1e-6
+
+        z = abs(theta_val - median) / mad
+
+        if z > MAD_THRESHOLD:
+            logger.info(
+                f"Artifact detected: {theta_val:.1f} (median={median:.1f}, MAD={mad:.1f}, z={z:.1f})"
+            )
+            continue  # skip adding this sample to baseline
+
+        # clean sample → keep
+        buffer.append(theta_val)
         now = time.time()
+        theta_z = (theta_val - MU) / SIGMA
 
-        if smoothed_theta > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME:
-            logger.info(f"Theta threshold crossed: z={smoothed_theta:.2f}. Triggering LIFU.")
+        if theta_z < MAD_THRESHOLD and theta_z > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME:
+            logger.info(f"Theta threshold crossed: z={theta_z:.2f}. Triggering LIFU.")
             try:
+                eeg_trigger_outlet.push_sample(["LIFU_ON"])
                 interface.hvcontroller.turn_hv_on()
-                time.sleep(0.3)
+                time.sleep(0.3) # this causes a lot of delay no? 
 
-                lifu_outlet.push_sample(["THETA_TRIGGER"])
-                lifu_outlet.push_sample(["LIFU_ON"])
-                lifu_num_outlet.push_sample([1.0]) 
                 interface.start_sonication()
+                lifu_num_outlet.push_sample([1.0]) 
                 time.sleep(SONICATION_TIME)
                 interface.stop_sonication()
-                lifu_outlet.push_sample(["LIFU_OFF"])
+                eeg_trigger_outlet.push_sample(["LIFU_OFF"])
                 lifu_num_outlet.push_sample([0.0]) 
 
                 interface.hvcontroller.turn_hv_off()
@@ -266,7 +280,7 @@ def theta_trigger_loop():
 
 # gp pipeline for EEG headset
 
-fs = 250  # set to your actual sampling rate
+fs = 250 
 
 def run_pipeline():
     app = gp.MainApp()
@@ -278,9 +292,9 @@ def run_pipeline():
     notch60 = gp.Bandstop(f_lo=58, f_hi=62, order=4)
 
     power = gp.Equation("in**2")
-    moving_average = gp.MovingAverage(window_size=125)
+    moving_average = gp.MovingAverage(window_size=50)
     decimator = gp.Decimator(decimation_factor=25)
-    hold = gp.Hold()
+    #hold = gp.Hold()
 
     merger = gp.Router(
         input_channels={
@@ -288,7 +302,7 @@ def run_pipeline():
             "theta_filter": [0],
             "power": [0],
             "moving_average": [0],
-            "hold": [0],
+            #"hold": [0],
         },
         output_channels=[gp.Router.ALL],
     )
@@ -300,31 +314,29 @@ def run_pipeline():
             "Theta Filter (4-7Hz)",
             "Instantaneous Power",
             "Smoothed Power",
-            "Decimated Trigger Value"
         ]
     )
 
     sender = gp.LSLSender()
-    writer = gp.CsvWriter(file_name=f"thetaPSD_{hash_and_test}.csv")
-
+    online_writer = gp.CsvWriter(file_name=f"thetaPSD_online_{hash_and_test}.csv")
+    offline_writer = gp.CsvWriter(file_name=f"thetaPSD_offline_{hash_and_test}.csv")
 
     p.connect(source, notch60)
     p.connect(notch60, theta_filter)
     p.connect(theta_filter, power)
     p.connect(power, moving_average)
     p.connect(moving_average, decimator)
-    p.connect(decimator, hold)
 
     p.connect(source, merger["raw_eeg"])
     p.connect(theta_filter, merger["theta_filter"])
     p.connect(power, merger["power"])
     p.connect(moving_average, merger["moving_average"])
-    p.connect(hold, merger["hold"])
 
 
     p.connect(merger, scope)
     p.connect(merger, sender)
-    p.connect(merger, writer)
+    p.connect(moving_average, online_writer)
+    p.connect(source, offline_writer)
 
     app.add_widget(scope)
 
