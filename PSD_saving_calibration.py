@@ -100,7 +100,7 @@ def theta_calibration():
         theta_val = sample[3]  # Smoothed Power channel
         # update rolling buffer
         # not enough data yet → just collect
-        if len(buffer) < 50:
+        if len(buffer) < BUFFER_SIZE:
             if theta_val < INITIAL_CUTOFF:
                 theta_history.append(theta_val)
                 buffer.append(theta_val)
@@ -149,7 +149,7 @@ if __name__ == "__main__":
             print(f"Mean: {mu:.2f}, Std Dev: {sigma:.2f}")
 
         # wait for you to close the gpype window
-        pipeline_thread.join()
+   #    pipeline_thread.join()
 
     except KeyboardInterrupt:
         logger.info("Interrupted by user, exiting...")

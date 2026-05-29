@@ -225,6 +225,7 @@ def theta_trigger_loop():
     last_trigger_time = 0
     logger.info("Starting theta-based closed-loop monitoring...")
     buffer = []
+
     while True:
         sample, ts = inlet.pull_sample(timeout=1.0)
         if sample is None:
@@ -233,7 +234,7 @@ def theta_trigger_loop():
         theta_val = sample[3]
         # update rolling buffer
         # not enough data yet → just collect
-        if len(buffer) < 50:
+        if len(buffer) <= 450:
             if theta_val < INITIAL_CUTOFF:
                 buffer.append(theta_val)
             continue
@@ -255,8 +256,12 @@ def theta_trigger_loop():
 
         # clean sample → keep
         buffer.append(theta_val)
+        theta_z =np.abs(theta_val - MU) / SIGMA
+        ts_lsl = ts
+        with open(f"theta_z_values_{hash_and_test}.csv", "a") as f:
+            f.write(f"{ts_lsl},{theta_z}\n")
+        
         now = time.time()
-        theta_z = (theta_val - MU) / SIGMA
 
         if theta_z < MAD_THRESHOLD and theta_z > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME:
             logger.info(f"Theta threshold crossed: z={theta_z:.2f}. Triggering LIFU.")
@@ -277,6 +282,7 @@ def theta_trigger_loop():
                 logger.info("Theta-triggered sonication complete.")
             except Exception as e:
                 logger.error(f"Error during theta-triggered sonication: {e}")
+
 
 # gp pipeline for EEG headset
 
