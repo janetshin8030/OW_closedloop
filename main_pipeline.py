@@ -42,7 +42,7 @@ if not logger.hasHandlers():
 # Sending markers to EEG
 eeg_trigger_info = StreamInfo('EEG_LIFU_events', 'Markers', 1, 0, 'string')
 eeg_trigger_outlet = StreamOutlet(eeg_trigger_info)
-logger.info("LIFU to PsychoPy LSL outlet created.") # technically don't need this one
+logger.info("LIFU to PsychoPy LSL outlet created.") 
 
 #sending markers to psychopy
 lifu_num_info = StreamInfo('PsychoPy_numeric', 'Markers', 1, 0, 'float32')
@@ -205,8 +205,8 @@ logger.info("Beamforming solution loaded.")
 SONICATION_TIME = 5 #seconds i believe
 COOLDOWN_TIME = 10
 THETA_THRESHOLD_Z = 1.5     # z-score threshold
-MU = 8.35
-SIGMA = 13    
+MU = 8.20
+SIGMA = 5.0
 MAD_THRESHOLD = 6         # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
