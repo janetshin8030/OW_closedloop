@@ -70,7 +70,7 @@ def record_lifu_numeric():
         while RUNNING:
             sample, ts= inlet.pull_sample(timeout=1.0)
             if sample is None:
-                break
+                continue
             if sample:
                 relative_ts = ts - eeg_start_lsl
                 writer.writerow([relative_ts, sample[0],ts])
@@ -236,8 +236,7 @@ def theta_trigger_loop():
         sample, ts = inlet.pull_sample(timeout=1.0)
         if sample is None:
             break
-
-        theta_val = sample[4]  # Smoothed Power channel
+        theta_val = sample[5]  # Smoothed Power channel
         if last_theta_val is not None and theta_val == last_theta_val:
             continue
         last_theta_val = theta_val
@@ -246,6 +245,7 @@ def theta_trigger_loop():
         if len(buffer) <= 200:
             if theta_val < INITIAL_CUTOFF:
                 buffer.append(theta_val)
+                eeg_trigger_outlet.push_sample(["collecting_baseline"])
             continue
         if len(buffer) > BUFFER_SIZE:
             buffer.pop(0)
@@ -265,15 +265,15 @@ def theta_trigger_loop():
 
         # clean sample → keep
         buffer.append(theta_val)
-        theta_z =np.abs(theta_val - MU) / SIGMA
-        ts_rel = ts - eeg_start_lsl
-        with open(f"theta_z_values_{hash_and_test}.csv", "a") as f:
-            f.write(f"{ts_rel},{theta_z}\n")
+        #theta_z =np.abs(theta_val - MU) / SIGMA
+        #ts_rel = ts - eeg_start_lsl
+        # with open(f"theta_z_values_{hash_and_test}.csv", "a") as f:
+        #     f.write(f"{ts_rel},{theta_z}\n")
         
-        now = ts_rel
+        now = ts
 
-        if theta_z < MAD_THRESHOLD and theta_z > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME:
-            logger.info(f"Theta threshold crossed: z={theta_z:.2f}. Triggering LIFU.")
+        if theta_val < MAD_THRESHOLD and theta_val > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME:
+            logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
             try:
                 eeg_trigger_outlet.push_sample(["LIFU_ON"])
                 interface.hvcontroller.turn_hv_on()
@@ -287,7 +287,7 @@ def theta_trigger_loop():
                 lifu_num_outlet.push_sample([0.0]) 
 
                 interface.hvcontroller.turn_hv_off()
-                last_trigger_time = ts_rel
+                last_trigger_time = now
                 logger.info("Theta-triggered sonication complete.")
             except Exception as e:
                 logger.error(f"Error during theta-triggered sonication: {e}")
@@ -301,7 +301,8 @@ def run_pipeline():
     global eeg_start_lsl
     app = gp.MainApp()
     p = gp.Pipeline()
-
+    MU = 2.32
+    SIGMA = 4.18
     source = gp.BCICore8()
 
     theta_filter = gp.Bandpass(f_lo=4.0, f_hi=7.0, order=4)
@@ -311,6 +312,8 @@ def run_pipeline():
     moving_average = gp.MovingAverage(window_size=50)
     decimator = gp.Decimator(decimation_factor=10)
     hold = gp.Hold()
+    theta_z_eq = gp.Equation("(in - 2.32) / 4.18")
+
 
     merger = gp.Router(
         input_channels={
@@ -318,7 +321,8 @@ def run_pipeline():
             "theta_filter": [0],
             "power": [0],
             "moving_average": [0],
-            "hold": [0],
+            "theta_z": [0],
+            "hold": [0]
         },
         output_channels=[gp.Router.ALL],
     )
@@ -330,19 +334,21 @@ def run_pipeline():
             "Theta Filter (4-7Hz)",
             "Instantaneous Power",
             "Smoothed Power",
+            "Theta Z-Score",
             "Decimated Power"
         ]
     )
 
     sender = gp.LSLSender()
-    online_writer = gp.CsvWriter(file_name=f"thetaPSD_online_{hash_and_test}.csv")
-    offline_writer = gp.CsvWriter(file_name=f"thetaPSD_offline_{hash_and_test}.csv")
+    online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{hash_and_test}.csv")
+    offline_writer = gp.CsvWriter(file_name=f"thetaEEG_full_{hash_and_test}.csv")
 
     p.connect(source, notch60)
     p.connect(notch60, theta_filter)
     p.connect(theta_filter, power)
     p.connect(power, moving_average)
-    p.connect(moving_average, decimator)
+    p.connect(moving_average, theta_z_eq)
+    p.connect(theta_z_eq, decimator)
     p.connect(decimator, hold)
 
 
@@ -351,6 +357,7 @@ def run_pipeline():
     p.connect(power, merger["power"])
     p.connect(moving_average, merger["moving_average"])
     p.connect(hold, merger["hold"])
+    p.connect(theta_z_eq, merger["theta_z"])
 
 
     p.connect(merger, scope)
