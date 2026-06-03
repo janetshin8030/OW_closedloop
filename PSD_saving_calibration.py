@@ -33,6 +33,8 @@ def run_pipeline():
 
     power = gp.Equation("in**2")
     moving_average = gp.MovingAverage(window_size=50)
+    decimator = gp.Decimator(decimation_factor=10)
+    hold = gp.Hold()
 
     merger = gp.Router(
         input_channels={
@@ -40,6 +42,7 @@ def run_pipeline():
             "theta_filter": [0],
             "power": [0],
             "moving_average": [0],
+            "hold": [0]
         },
         output_channels=[gp.Router.ALL],
     )
@@ -52,6 +55,7 @@ def run_pipeline():
             "Theta Filter (4-7Hz)",
             "Instantaneous Power",
             "Smoothed Power",
+            "Decimated Power"
         ],
     )
 
@@ -61,11 +65,14 @@ def run_pipeline():
     p.connect(notch60, theta_filter)
     p.connect(theta_filter, power)
     p.connect(power, moving_average)
+    p.connect(moving_average, decimator)
+    p.connect(decimator, hold)
 
     p.connect(source, merger["raw_eeg"])
     p.connect(theta_filter, merger["theta_filter"])
     p.connect(power, merger["power"])
     p.connect(moving_average, merger["moving_average"])
+    p.connect(hold, merger["hold"])
 
     p.connect(merger, sender)
     p.connect(merger, scope)

@@ -49,6 +49,9 @@ lifu_num_info = StreamInfo('PsychoPy_numeric', 'Markers', 1, 0, 'float32')
 lifu_num_outlet = StreamOutlet(lifu_num_info)
 logger.info("LIFU to PsychoPy LSL outlet created.") 
 
+#global variables for threads
+RUNNING = True
+
 #saving markers to csv
 def record_lifu_numeric():
     print("Waiting for LIFU_numeric stream...")
@@ -64,8 +67,10 @@ def record_lifu_numeric():
         writer = csv.writer(f)
         writer.writerow(["Time", "marker", "LSL_timestamp"])  # Header
 
-        while True:
+        while RUNNING:
             sample, ts= inlet.pull_sample(timeout=1.0)
+            if sample is None:
+                break
             if sample:
                 relative_ts = ts - eeg_start_lsl
                 writer.writerow([relative_ts, sample[0],ts])
@@ -202,12 +207,12 @@ logger.info("Beamforming solution loaded.")
 
 # theta sonication loop (eeg + demo code)
 
-SONICATION_TIME = 5 #seconds i believe
-COOLDOWN_TIME = 10
-THETA_THRESHOLD_Z = 1.5     # z-score threshold
-MU = 8.20
-SIGMA = 5.0
-MAD_THRESHOLD = 6         # for artifact rejection in baseline collection
+SONICATION_TIME = 3 #seconds i believe
+COOLDOWN_TIME = 5
+THETA_THRESHOLD_Z = 1.5    # z-score threshold
+MU = 2.32
+SIGMA = 4.18
+MAD_THRESHOLD = 6        # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
 
@@ -223,18 +228,22 @@ def theta_trigger_loop():
 
     #theta_history = []
     last_trigger_time = 0
+    last_theta_val = None
     logger.info("Starting theta-based closed-loop monitoring...")
     buffer = []
 
-    while True:
+    while RUNNING:
         sample, ts = inlet.pull_sample(timeout=1.0)
         if sample is None:
-            continue
+            break
 
-        theta_val = sample[3]
+        theta_val = sample[4]  # Smoothed Power channel
+        if last_theta_val is not None and theta_val == last_theta_val:
+            continue
+        last_theta_val = theta_val
         # update rolling buffer
         # not enough data yet → just collect
-        if len(buffer) <= 450:
+        if len(buffer) <= 200:
             if theta_val < INITIAL_CUTOFF:
                 buffer.append(theta_val)
             continue
@@ -257,11 +266,11 @@ def theta_trigger_loop():
         # clean sample → keep
         buffer.append(theta_val)
         theta_z =np.abs(theta_val - MU) / SIGMA
-        ts_lsl = ts
+        ts_rel = ts - eeg_start_lsl
         with open(f"theta_z_values_{hash_and_test}.csv", "a") as f:
-            f.write(f"{ts_lsl},{theta_z}\n")
+            f.write(f"{ts_rel},{theta_z}\n")
         
-        now = time.time()
+        now = ts_rel
 
         if theta_z < MAD_THRESHOLD and theta_z > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME:
             logger.info(f"Theta threshold crossed: z={theta_z:.2f}. Triggering LIFU.")
@@ -273,12 +282,12 @@ def theta_trigger_loop():
                 interface.start_sonication()
                 lifu_num_outlet.push_sample([1.0]) 
                 time.sleep(SONICATION_TIME)
-                interface.stop_sonication()
                 eeg_trigger_outlet.push_sample(["LIFU_OFF"])
+                interface.stop_sonication()
                 lifu_num_outlet.push_sample([0.0]) 
 
                 interface.hvcontroller.turn_hv_off()
-                last_trigger_time = time.time()
+                last_trigger_time = ts_rel
                 logger.info("Theta-triggered sonication complete.")
             except Exception as e:
                 logger.error(f"Error during theta-triggered sonication: {e}")
@@ -289,6 +298,7 @@ def theta_trigger_loop():
 fs = 250 
 
 def run_pipeline():
+    global eeg_start_lsl
     app = gp.MainApp()
     p = gp.Pipeline()
 
@@ -299,8 +309,8 @@ def run_pipeline():
 
     power = gp.Equation("in**2")
     moving_average = gp.MovingAverage(window_size=50)
-    decimator = gp.Decimator(decimation_factor=25)
-    #hold = gp.Hold()
+    decimator = gp.Decimator(decimation_factor=10)
+    hold = gp.Hold()
 
     merger = gp.Router(
         input_channels={
@@ -308,18 +318,19 @@ def run_pipeline():
             "theta_filter": [0],
             "power": [0],
             "moving_average": [0],
-            #"hold": [0],
+            "hold": [0],
         },
         output_channels=[gp.Router.ALL],
     )
 
     scope = gp.TimeSeriesScope(
-        amplitude_limit=20, time_window=10,
+        amplitude_limit=20, time_window=5,
         channel_names=[
             "Raw EEG",
             "Theta Filter (4-7Hz)",
             "Instantaneous Power",
             "Smoothed Power",
+            "Decimated Power"
         ]
     )
 
@@ -332,47 +343,59 @@ def run_pipeline():
     p.connect(theta_filter, power)
     p.connect(power, moving_average)
     p.connect(moving_average, decimator)
+    p.connect(decimator, hold)
+
 
     p.connect(source, merger["raw_eeg"])
     p.connect(theta_filter, merger["theta_filter"])
     p.connect(power, merger["power"])
     p.connect(moving_average, merger["moving_average"])
+    p.connect(hold, merger["hold"])
 
 
     p.connect(merger, scope)
     p.connect(merger, sender)
-    p.connect(moving_average, online_writer)
+    p.connect(merger, online_writer)
     p.connect(source, offline_writer)
 
     app.add_widget(scope)
 
     p.start()
+    eeg_start_lsl = local_clock()  # set global start time for LSL relative timestamps
+    try:
+        app.run()          # blocks until GUI close or Ctrl+C
+    except KeyboardInterrupt:
+        logger.info("Pipeline interrupted, stopping g.Pype...")
+    finally:
+        p.stop()  
 
-    app.run()
+    # p.start()
 
-    p.stop()
+    # app.run()
+
+    # p.stop()
 
 if __name__ == "__main__":
     try:
         # Start theta closed-loop thread
-        theta_thread = threading.Thread(target=theta_trigger_loop, daemon=True)
+        theta_thread = threading.Thread(target=theta_trigger_loop, daemon=False)
         theta_thread.start()
 
         # Start LIFU marker recording thread
-        lifu_record_thread = threading.Thread(target=record_lifu_numeric, daemon=True)
+        lifu_record_thread = threading.Thread(target=record_lifu_numeric, daemon=False)
         lifu_record_thread.start()
 
         # Start g.Pype pipeline
-        eeg_start_lsl = local_clock()
         run_pipeline()
 
+    finally:
+            # ALWAYS stop threads when pipeline stops
+            RUNNING = False
 
+            try:
+                interface.hvcontroller.turn_hv_off()
+            except:
+                pass
 
-    except KeyboardInterrupt:
-        logger.info("Interrupted by user, turning HV off and exiting...")
-        try:
-            interface.hvcontroller.turn_hv_off()
-        except Exception:
-            pass
-        sys.exit(0)
-
+            theta_thread.join()
+            lifu_record_thread.join()
