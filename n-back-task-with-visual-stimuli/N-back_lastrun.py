@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2026.1.3),
-    on June 01, 2026, at 11:25
+    on June 05, 2026, at 10:09
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -420,10 +420,15 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         depth=-2.0);
     response_2 = keyboard.Keyboard(deviceName='defaultKeyboard')
     # Run 'Begin Experiment' code from code_2
-    from pylsl import StreamInlet, resolve_byprop
+    from pylsl import StreamInlet, resolve_byprop, StreamInfo, StreamOutlet
     
     print("Searching for LIFUEvents stream...")
     streams = resolve_byprop('name', 'PsychoPy_numeric', timeout=30)
+    
+    # Create the PsychoPyMarkers outlet (this is the correct way)
+    start_info = StreamInfo('PsychoPyMarkers', 'Markers', 1, 0, 'string')
+    marker_outlet = StreamOutlet(start_info)
+    
     if len(streams) == 0:
         print("ERROR: No psychopy stream found.")
         lifu_inlet = None
@@ -744,11 +749,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # set up handler to look after randomisation of conditions etc
     trials_2 = data.TrialHandler2(
         name='trials_2',
-        nReps=1, 
+        nReps=2, 
         method='sequential', 
         extraInfo=expInfo, 
         originPath=-1, 
-        trialList=data.importConditions('N-back-2.xlsx'), 
+        trialList=data.importConditions('Nback-trial-1.xlsx'), 
         seed=None, 
         isTrials=True, 
     )
@@ -793,6 +798,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         # Run 'Begin Routine' code from code_2
         last_lifu_event= None
         last_lifu_time = None
+        marker_outlet.push_sample(["START_EXPERIMENT"])
         # store start times for N_back_2_trials
         N_back_2_trials.tStartRefresh = win.getFutureFlipTime(clock=globalClock)
         N_back_2_trials.tStart = globalClock.getTime(format='float')
@@ -1061,7 +1067,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             trials_2.status = STARTED
         thisExp.nextEntry()
         
-    # completed 1 repeats of 'trials_2'
+    # completed 2 repeats of 'trials_2'
     trials_2.status = FINISHED
     
     if thisSession is not None:

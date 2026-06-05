@@ -1,0 +1,5 @@
+openlifu==v0.20.0
+bcrypt
+threadpoolctl
+requests
+segno

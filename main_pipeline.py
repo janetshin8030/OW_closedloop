@@ -208,13 +208,25 @@ logger.info("Beamforming solution loaded.")
 # theta sonication loop (eeg + demo code)
 
 SONICATION_TIME = 3 #seconds i believe
-COOLDOWN_TIME = 5
+COOLDOWN_TIME = 7 #sonication time + cooldown time 
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
 MU = 2.32
 SIGMA = 4.18
 MAD_THRESHOLD = 6        # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
+sonication_enabled = False
+
+def listen_for_start():
+    global sonication_enabled
+    inlet = StreamInlet(resolve_byprop("name", "PsychoPyMarkers")[0])
+
+    while True:
+        sample, ts = inlet.pull_sample(timeout=0.1)
+        if sample and sample[0] == "START_EXPERIMENT":
+            print("Experiment started — enabling LIFU.")
+            sonication_enabled = True
+            break
 
 def theta_trigger_loop():
     logger.info("Waiting for theta LSL stream (type='EEG')...")
@@ -271,20 +283,21 @@ def theta_trigger_loop():
         #     f.write(f"{ts_rel},{theta_z}\n")
         
         now = ts
-
-        if theta_val < MAD_THRESHOLD and theta_val > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME:
+        print(f"sonication_enabled={sonication_enabled}")
+        
+        if sonication_enabled and theta_val < MAD_THRESHOLD and theta_val > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME:
             logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
             try:
-                eeg_trigger_outlet.push_sample(["LIFU_ON"])
+                eeg_trigger_outlet.push_sample(["LIFU_ON"]) #once ttl works we will take this out
+                lifu_num_outlet.push_sample([1.0]) 
                 interface.hvcontroller.turn_hv_on()
                 time.sleep(0.3) # this causes a lot of delay no? 
 
                 interface.start_sonication()
-                lifu_num_outlet.push_sample([1.0]) 
                 time.sleep(SONICATION_TIME)
                 eeg_trigger_outlet.push_sample(["LIFU_OFF"])
-                interface.stop_sonication()
-                lifu_num_outlet.push_sample([0.0]) 
+                lifu_num_outlet.push_sample([0.0])
+                interface.stop_sonication() 
 
                 interface.hvcontroller.turn_hv_off()
                 last_trigger_time = now
@@ -384,6 +397,10 @@ def run_pipeline():
 
 if __name__ == "__main__":
     try:
+        # Start thread to listen for experiment start trigger from PsychoPy
+        listen_for_psychopy_thread = threading.Thread(target=listen_for_start, daemon=True)
+        listen_for_psychopy_thread.start()
+
         # Start theta closed-loop thread
         theta_thread = threading.Thread(target=theta_trigger_loop, daemon=False)
         theta_thread.start()
