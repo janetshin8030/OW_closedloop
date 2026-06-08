@@ -1,0 +1,44 @@
+{
+    "id": "01",
+    "subject_id": "ow_ex001",
+    "name": "phantom",
+    "date_created": "2026-06-05T11:19:29.415224",
+    "date_modified": "2026-06-05T11:19:29.440233",
+    "protocol_id": "neuromod_demo",
+    "volume_id": "MRI",
+    "transducer_id": "openlifu_1x400_evt1",
+    "array_transform": {
+        "matrix": [
+            [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                0.0,
+                1.0,
+                0.0,
+                0.0
+            ],
+            [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+            ],
+            [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
+        ],
+        "units": "mm"
+    },
+    "targets": [],
+    "markers": [],
+    "attrs": {},
+    "virtual_fit_results": {},
+    "transducer_tracking_results": []
+}

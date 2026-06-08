@@ -9,7 +9,7 @@ import gpype as gp
 # main issue is that if in the beginning it makes the MAD too small, it will never adjust properly
 hash_and_test = "stroop_test"
 DURATION = 100  # seconds
-BUFFER_SIZE = 500
+BUFFER_SIZE = 200
 MAD_THRESHOLD = 6
 INITIAL_CUTOFF = 100.0  # initial power threshold to exclude extreme artifacts during early collection
 
@@ -104,7 +104,7 @@ def theta_calibration():
         if sample is None:
             continue
 
-        theta_val = sample[3]  # Smoothed Power channel
+        theta_val = sample[4]  # decimated smoothed power channel --> see if it works
         # update rolling buffer
         # not enough data yet → just collect
         if len(buffer) < BUFFER_SIZE:

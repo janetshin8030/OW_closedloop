@@ -2,13 +2,10 @@
 import asyncio
 import logging
 import re
-import pylsl, logging, time, threading
 import threading
 from datetime import datetime
 from enum import Enum
 from typing import Optional, Callable, Dict, List, TYPE_CHECKING
-
-
 
 # Third-party imports
 import qt
@@ -148,7 +145,6 @@ class OnRunCompletedDialog(qt.QDialog):
         vBoxLayout.addWidget(self.buttonBox)
 
         self.buttonBox.accepted.connect(self.validateInputs)
-  
     
     def validateInputs(self):
 
@@ -198,7 +194,7 @@ class OpenLIFUSonicationControlWidget(ScriptedLoadableModuleWidget, VTKObservati
         self._cur_solution_id: str | None = None
         self._parameterNode = None
         self._parameterNodeGuiTag = None
- 
+
     @property
     def cur_solution_on_hardware_state(self) -> SolutionOnHardwareState:
         return self._cur_solution_on_hardware_state
@@ -661,8 +657,6 @@ class OpenLIFUSonicationControlWidget(ScriptedLoadableModuleWidget, VTKObservati
             self.workflow_controls.can_proceed = True
             self.workflow_controls.status_text = "Run the sonication solution on the hardware device."
 
-
-
 # OpenLIFUSonicationControlLogic
 #
 class LIFUQtSignals(qt.QObject):
@@ -671,8 +665,6 @@ class LIFUQtSignals(qt.QObject):
     deviceConnected = qt.Signal()  # Emitted from monitor thread; Qt queues to main thread
     deviceDisconnected = qt.Signal()  # Emitted from monitor thread; Qt queues to main thread
     dataReceived = qt.Signal(str, str)  # (descriptor, message)
-    lslTriggerReceived = qt.Signal()
-   #lslTriggerReceived = qt.Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -695,55 +687,6 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
             self._monitor_loop.run_forever()
         except Exception as e:
             logging.error(f"[LIFU] Monitor loop error: {e}")
-
-    # # =====================================================================
-    def start_lsl_trigger(self):
-        logging.info("[DEBUG] Starting LSL listener thread")
-        t = threading.Thread(target=self._lsl_trigger_loop_threaded, daemon=True)
-        t.start()
-    def _lsl_trigger_loop_threaded(self):
-
-        logging.info("[LSL] Resolving marker stream...")
-
-        while True:
-            try:
-                streams = pylsl.resolve_byprop('type', 'Markers', timeout=3)
-                if not streams:
-                    logging.warning("[LSL] No marker stream found. Retrying...")
-                    time.sleep(1)
-                    continue
-
-                inlet = pylsl.StreamInlet(streams[0])
-                logging.info(f"[LSL] Connected to stream: {streams[0].name()}")
-                break
-
-            except Exception as e:
-                logging.error(f"[LSL] Stream resolution failed: {e}")
-                time.sleep(1)
-
-        # Main listening loop
-        while True:
-            try:
-                sample, ts = inlet.pull_sample(timeout=0.5)
-                if not sample:
-                    continue
-
-                marker = str(sample[0]).strip()
-                logging.info(f"[LSL] Marker received: {marker}")
-
-                if marker == "START_SONICATION":
-                    if not self.running:
-                        logging.info("[LSL Trigger] Starting sonication protocol...")
-                        self.qt_signals.lslTriggerReceived.emit()
-                    else:
-                        logging.warning("[LSL Trigger] Ignored: already running.")
-
-            except Exception as e:
-                logging.error(f"[LSL] Lost connection: {e}")
-                logging.info("[LSL] Reconnecting...")
-                return self._lsl_trigger_loop_threaded()
-            
-
 
     def __init__(self) -> None:
         """Called when the logic class is instantiated. Can be used for initializing member variables."""
@@ -793,7 +736,6 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         self.qt_signals.deviceConnected.connect(self._dispatch_device_connected)
         self.qt_signals.deviceDisconnected.connect(self._dispatch_device_disconnected)
         self.qt_signals.dataReceived.connect(self._dispatch_data_received)
-        # self.qt_signals.lslTriggerReceived.connect(self._remote_trigger_start)
 
         self.cur_lifu_interface = openlifu_lz().io.LIFUInterface(run_async=True, TX_test_mode=False, HV_test_mode=False)
 
@@ -814,17 +756,6 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         self.monitoring_timer.setInterval(100)
         self.monitoring_timer.timeout.connect(self._pumpMonitoringLoop)
         self.monitoring_timer.start()
-        self.LIFUQtSignals = LIFUQtSignals()
-        self.start_lsl_trigger()
-
-
-
-        # self._lsl_task: Optional[asyncio.Task] = None
-
-        # # Schedule the LSL loop inside the existing asyncio loop
-        # self._monitor_loop.call_soon_threadsafe(
-        #     lambda: setattr(self, '_lsl_task', self._monitor_loop.create_task(self._lsl_trigger_loop()))
-        # )
 
         self.cur_solution_on_hardware: Optional[openlifu.plan.Solution] = None
         """The active Solution object last sent to the ultrasound hardware."""
@@ -836,8 +767,6 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         logging.getLogger("LIFUTXDevice").setLevel(logging.ERROR)
 
     def stop_monitoring(self):
-        # if self._lsl_task and not self._lsl_task.done():
-        #     self._monitor_loop.call_soon_threadsafe(self._lsl_task.cancel)
         if self.cur_lifu_interface:
             self.cur_lifu_interface.stop_monitoring()
 
@@ -1097,9 +1026,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
                     if parsed["status"] == "STOPPED":
                         logging.info("Trigger is stopped.")
                         self.cur_lifu_interface.set_status(openlifu_lz().io.LIFUInterfaceStatus.STATUS_FINISHED)
-                        self.running = False
                         self.qt_signals.finishScanning.emit(True)  # Signal that scanning is finished 
-                    
                     else:
                         #update status
                         self.cur_lifu_interface.set_status(openlifu_lz().io.LIFUInterfaceStatus.STATUS_RUNNING)
@@ -1122,17 +1049,10 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
 
         # ---- Start the run ----
         self.running = True
-        print(f"self.running = {self.running}")
 
         # TODO START SONICATION on HARDWARE
-        self.cur_lifu_interface.start_sonication()
-        qt.QTimer.singleShot(5000, lambda: self._fake_stop())
+        self.cur_lifu_interface.start_sonication()        
 
-    def _fake_stop(self):
-        logging.warning("[FAKE] Forcing STOPPED because no TX messages received.")
-        self.cur_lifu_interface.stop_sonication()
-        self.running = False
-    
     def stop(self):
         logging.debug("Logic.stop() called")
         # ---- Start the run ----
@@ -1221,7 +1141,3 @@ class OpenLIFUSonicationControlTest(ScriptedLoadableModuleTest):
         # Create a run
         sc_logic.create_openlifu_run(test_run_parameters)
         assert get_openlifu_data_parameter_node().loaded_run is not None
-
-
-
-

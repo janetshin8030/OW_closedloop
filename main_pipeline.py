@@ -79,6 +79,40 @@ def record_lifu_numeric():
                 print("Wrote marker:", sample[0])
 
 
+def record_eeg_lsl():
+    """
+    Record EEG data from LSL to CSV for offline processing.
+    This is separate from the g.Pype pipeline's own CSV writing.
+    """
+    print("Waiting for EEG LSL stream...")
+    streams = resolve_byprop('type', 'EEG', timeout=30)
+    if not streams:
+        print("No EEG LSL stream found.")
+        return
+
+    inlet = StreamInlet(streams[0])
+    print("Connected to EEG LSL stream.")
+
+    with open(f"eeg_LSL_gpype{hash_and_test}.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        header_written = False
+
+        while RUNNING:
+            sample, ts = inlet.pull_sample(timeout=1.0)
+            if sample is None:
+                continue
+
+            if not header_written:
+                header = ["Time"] + [f"Ch{i:02d}" for i in range(1, len(sample)+1)]
+                writer.writerow(header)
+                header_written = True
+
+            writer.writerow([ts] + sample)
+            f.flush()
+            os.fsync(f.fileno())
+            #print(f"Wrote EEG sample at {ts:.6f}s")
+
+
 # beamforming parameters (demo code)
 xInput = 0
 yInput = 0
@@ -408,6 +442,10 @@ if __name__ == "__main__":
         # Start LIFU marker recording thread
         lifu_record_thread = threading.Thread(target=record_lifu_numeric, daemon=False)
         lifu_record_thread.start()
+
+        # Start EEG recording thread
+        eeg_record_thread = threading.Thread(target=record_eeg_lsl, daemon=False)
+        eeg_record_thread.start()
 
         # Start g.Pype pipeline
         run_pipeline()
