@@ -29,7 +29,6 @@ from openlifu.plan.solution import Solution
 
 # main pipeline from theta detection to LIFU triggering, sends markers to psychopy and EEG files
 
-
 # logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -141,15 +140,15 @@ distances = np.sqrt(np.sum((focus - positions) ** 2, axis=1)).reshape(1, -1)
 speed_of_sound = 1500
 tof = distances * 1e-3 / speed_of_sound
 delays = tof.max() - tof
-
 apodizations = np.ones((1, arr.numelements()))
-
 logger.info("Starting LIFU Test Script...")
 interface = LIFUInterface(ext_power_supply=use_external_power_supply)
 tx_connected, hv_connected = interface.is_device_connected()
 
 if not use_external_power_supply and not tx_connected:
     logger.warning("TX device not connected. Attempting to turn on 12V...")
+    interface.hvcontroller.turn_hv_on()
+    time.sleep(2)
     interface.hvcontroller.turn_12v_on()
     time.sleep(2)
     interface.stop_monitoring()
@@ -241,12 +240,12 @@ logger.info("Beamforming solution loaded.")
 
 # theta sonication loop (eeg + demo code)
 
-SONICATION_TIME = 3 #seconds i believe
+SONICATION_TIME = 5 #seconds i believe  
 COOLDOWN_TIME = 7 #sonication time + cooldown time 
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
 MU = 2.32
 SIGMA = 4.18
-MAD_THRESHOLD = 6        # for artifact rejection in baseline collection
+MAD_THRESHOLD = 60       # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
 sonication_enabled = False
@@ -259,12 +258,13 @@ def listen_for_start():
         sample, ts = inlet.pull_sample(timeout=0.1)
         if sample and sample[0] == "START_EXPERIMENT":
             print("Experiment started — enabling LIFU.")
+            eeg_trigger_outlet.push_sample(["START_EXPERIMENT_RECEIVED"])
             sonication_enabled = True
             break
 
 def theta_trigger_loop():
     logger.info("Waiting for theta LSL stream (type='EEG')...")
-    streams = resolve_byprop('type', 'EEG', timeout=30)
+    streams = resolve_byprop('name', 'EEG_gpype', timeout=30)
     if not streams:
         logger.error("No EEG LSL stream found for theta.")
         return
@@ -324,8 +324,8 @@ def theta_trigger_loop():
             try:
                 eeg_trigger_outlet.push_sample(["LIFU_ON"]) #once ttl works we will take this out
                 lifu_num_outlet.push_sample([1.0]) 
-                interface.hvcontroller.turn_hv_on()
-                time.sleep(0.3) # this causes a lot of delay no? 
+                # interface.hvcontroller.turn_hv_on()
+                # time.sleep(0.3) # this causes a lot of delay no? 
 
                 interface.start_sonication()
                 time.sleep(SONICATION_TIME)
@@ -333,7 +333,7 @@ def theta_trigger_loop():
                 lifu_num_outlet.push_sample([0.0])
                 interface.stop_sonication() 
 
-                interface.hvcontroller.turn_hv_off()
+                # interface.hvcontroller.turn_hv_off()
                 last_trigger_time = now
                 logger.info("Theta-triggered sonication complete.")
             except Exception as e:
@@ -386,7 +386,7 @@ def run_pipeline():
         ]
     )
 
-    sender = gp.LSLSender()
+    sender = gp.LSLSender(stream_name = "EEG_gpype")  # default name/type; we’ll resolve by type='EEG'
     online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{hash_and_test}.csv")
     offline_writer = gp.CsvWriter(file_name=f"thetaEEG_full_{hash_and_test}.csv")
 
