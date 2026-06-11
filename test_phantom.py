@@ -60,12 +60,12 @@ yInput = 0
 zInput = 50
 
 
-first_target_runtime_sec = 15
-second_target_runtime_sec = 10
+first_target_runtime_sec = 5
+second_target_runtime_sec = 5
 
 
 frequency_kHz = 400 # Frequency in kHz
-voltage = 45.0 # Voltage in Volts
+voltage = 35.0 # Voltage in Volts
 duration_msec = 3 # Pulse Duration in milliseconds
 interval_msec = 10 # Pulse Repetition Interval in milliseconds
 num_modules = 1 # Number of modules in the system

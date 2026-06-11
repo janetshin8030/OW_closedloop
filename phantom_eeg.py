@@ -45,7 +45,7 @@ yInput = 0
 zInput = 50
 
 frequency_kHz = 400
-voltage = 45.0
+voltage = 30.0
 duration_msec = 3
 interval_msec = 10
 num_modules = 1
@@ -78,6 +78,20 @@ apodizations = np.ones((1, arr.numelements()))
 logger.info("Starting LIFU Test Script...")
 interface = LIFUInterface(ext_power_supply=use_external_power_supply)
 tx_connected, hv_connected = interface.is_device_connected()
+
+interface.hvcontroller.turn_12v_on()
+time.sleep(0.8)
+
+interface.stop_monitoring()
+del interface
+interface = LIFUInterface(ext_power_supply=False)
+
+tx_connected, hv_connected = interface.is_device_connected() # do i need this command again???
+if not tx_connected:
+    raise RuntimeError("TX not connected after 12V power-up")
+
+interface.hvcontroller.turn_hv_on()
+time.sleep(0.5)
 
 if not use_external_power_supply and not tx_connected:
     logger.warning("TX device not connected. Attempting to turn on 12V...")
@@ -241,7 +255,7 @@ def marker_sonication_trigger():
 
     last_trigger_time = 0
     COOLDOWN_WINDOW = 10.0 # greater than sonication time
-    SONICATION_TIME = 10.0
+    SONICATION_TIME = 5.0
 
 
     while True:

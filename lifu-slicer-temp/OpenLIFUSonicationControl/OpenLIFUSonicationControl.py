@@ -28,7 +28,8 @@ from OpenLIFULib import (
 from OpenLIFULib.guided_mode_util import GuidedWorkflowMixin
 from OpenLIFULib.user_account_mode_util import UserAccountBanner
 from OpenLIFULib.util import add_slicer_log_handler, display_errors, replace_widget
-
+import time
+from pylsl import StreamInlet, local_clock, resolve_byprop, StreamInfo, StreamOutlet
 
 # This import is deferred at runtime using openlifu_lz, 
 # but is done here for IDE and static analysis purposes
@@ -1049,9 +1050,50 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
 
         # ---- Start the run ----
         self.running = True
+        streams = resolve_byprop('name', 'keyboard_markers', timeout = 30)
+        if not streams:
+            logging.error("No EEG LSL stream found for theta.")
+            return
 
-        # TODO START SONICATION on HARDWARE
-        self.cur_lifu_interface.start_sonication()        
+        inlet = StreamInlet(streams[0])
+        logging.info("Connected to EEG LSL stream for theta.")
+        last_trigger_time = 0
+        COOLDOWN_WINDOW = 10.0 # greater than sonication time
+        SONICATION_TIME = 5.0
+
+
+        while True:
+            sample, ts = inlet.pull_sample(timeout=1.0)
+            if sample is None:
+                continue
+            value = sample[0]  # the channel for markers
+            current_time = ts
+            if value == 0:
+                continue
+            if value == "START_SONICATION"  and current_time - last_trigger_time > COOLDOWN_WINDOW:  
+                if self.cur_lifu_interface.txdevice.start_trigger():
+                    logging.info("Trigger Running...")
+
+                    for i in range(int(SONICATION_TIME),0,-1):
+                        logging.info(f"Sonication stopping in {i} seconds")
+                        time.sleep(1)
+
+                    # Wait for threads to finish
+                    # user_input.join()
+
+                    # time.sleep(0.5)  # Give the logging thread time to finish
+                    if self.cur_lifu_interface.txdevice.stop_trigger():
+                        logging.info("Trigger stopped successfully.")
+                        last_trigger_time = ts
+                    else:
+                        logging.error("Failed to stop trigger.")
+                else:
+                    logging.error("Failed to get trigger setting.")
+                                
+
+
+        # # TODO START SONICATION on HARDWARE
+        # self.cur_lifu_interface.start_sonication()        
 
     def stop(self):
         logging.debug("Logic.stop() called")
