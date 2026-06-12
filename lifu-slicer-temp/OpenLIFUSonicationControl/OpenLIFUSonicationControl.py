@@ -218,7 +218,12 @@ class OpenLIFUSonicationControlWidget(ScriptedLoadableModuleWidget, VTKObservati
 
         # Create logic class. Logic implements all computations that should be possible to run
         # in batch mode, without a graphical user interface.
-        self.logic = OpenLIFUSonicationControlLogic()
+        # self.logic = OpenLIFUSonicationControlLogic()
+
+        #ONLY ONE LOGIC INSTANCE
+        if not hasattr(slicer.modules, "openlifu_sonication_logic"):
+            slicer.modules.openlifu_sonication_logic = OpenLIFUSonicationControlLogic()
+        self.logic = slicer.modules.openlifu_sonication_logic
 
         # User account banner widget replacement. Note: the visibility is
         # initialized to false because this widget will *always* exist before
@@ -504,6 +509,12 @@ class OpenLIFUSonicationControlWidget(ScriptedLoadableModuleWidget, VTKObservati
             self.logic.cur_solution_on_hardware = get_openlifu_data_parameter_node().loaded_solution.solution.solution
             logging.debug("Solution successfully sent to device")
             self.updateWidgetSolutionOnHardwareState(SolutionOnHardwareState.SUCCESSFUL_SEND)
+
+            self.logic.cur_lifu_interface.hvcontroller.turn_hv_on()
+           # self.logic.cur_lifu_interface.hvcontroller.wait_for_settle(timeout=2.0)
+            self.logic.cur_lifu_interface.txdevice.async_mode(True)
+            print(self.logic.cur_lifu_interface.hvcontroller.get_hv_status())
+#COME BACK HERE
                 
         except Exception as e:
             logging.error("Exception thrown: %s", e)
@@ -1040,63 +1051,77 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
     
     def run(self):
         " Returns True when the sonication control algorithm is done"
-        logging.debug("Logic.run() called")
+        logging.error("Logic.run() called")
 
         if get_openlifu_data_parameter_node().loaded_solution is None:
             raise RuntimeError("No solution loaded; cannot run sonication.")
 
         self.run_progress = 0
         self.sonication_run_complete = False
-
-        # ---- Start the run ----
         self.running = True
-        streams = resolve_byprop('name', 'keyboard_markers', timeout = 30)
+
+        
+        thread = threading.Thread(
+            target=self.lsl_loop,
+            args=(self.cur_lifu_interface,),
+            daemon=True,
+        )
+        thread.start()
+
+
+    def lsl_loop(self, lifu_interface):
+        logging.error(f"[THREAD] lifu_interface id: {id(lifu_interface)}")
+        streams = resolve_byprop('name', 'SlicerTestTrigger', timeout=30)
         if not streams:
             logging.error("No EEG LSL stream found for theta.")
+            self.running = False
             return
 
         inlet = StreamInlet(streams[0])
-        logging.info("Connected to EEG LSL stream for theta.")
+        logging.error("Connected to EEG LSL stream for theta.")
         last_trigger_time = 0
-        COOLDOWN_WINDOW = 10.0 # greater than sonication time
+        COOLDOWN_WINDOW = 10.0
         SONICATION_TIME = 5.0
 
-
-        while True:
+        while self.running:
             sample, ts = inlet.pull_sample(timeout=1.0)
             if sample is None:
                 continue
-            value = sample[0]  # the channel for markers
+
+            value = str(sample[0]).strip()
+            logging.error(f"Received LSL sample: {sample}")
             current_time = ts
-            if value == 0:
-                continue
-            if value == "START_SONICATION"  and current_time - last_trigger_time > COOLDOWN_WINDOW:  
-                if self.cur_lifu_interface.txdevice.start_trigger():
-                    logging.info("Trigger Running...")
 
-                    for i in range(int(SONICATION_TIME),0,-1):
-                        logging.info(f"Sonication stopping in {i} seconds")
-                        time.sleep(1)
-
-                    # Wait for threads to finish
-                    # user_input.join()
-
-                    # time.sleep(0.5)  # Give the logging thread time to finish
-                    if self.cur_lifu_interface.txdevice.stop_trigger():
-                        logging.info("Trigger stopped successfully.")
-                        last_trigger_time = ts
-                    else:
-                        logging.error("Failed to stop trigger.")
-                else:
-                    logging.error("Failed to get trigger setting.")
-                                
+            if value == "START_SONICATION" and current_time - last_trigger_time > COOLDOWN_WINDOW:
+                self.starting_sonication(SONICATION_TIME, lifu_interface)
+                last_trigger_time = ts
 
 
-        # # TODO START SONICATION on HARDWARE
-        # self.cur_lifu_interface.start_sonication()        
+    def starting_sonication(self, duration, lifu_interface):
+        if lifu_interface.txdevice.start_trigger():
+            logging.error("Trigger Running...")
+            print(lifu_interface.hvcontroller.get_hv_status())
+            
 
+            for i in range(int(duration), 0, -1):
+                logging.error(f"Sonication stopping in {i} seconds")
+                time.sleep(1)
+
+            if lifu_interface.txdevice.stop_trigger():
+                logging.error("Trigger stopped successfully.")
+            else:
+                logging.error("Failed to stop trigger.")
+        else:
+            logging.error("Failed to get trigger setting.")
+
+
+            # # # TODO START SONICATION on HARDWARE
+            # self.cur_lifu_interface.start_sonication()   
+
+
+   
     def stop(self):
-        logging.debug("Logic.stop() called")
+        logging.error("Logic.stop() called")
         # ---- Start the run ----
         self.running = False
         
