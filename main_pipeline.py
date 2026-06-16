@@ -112,134 +112,6 @@ def record_eeg_lsl():
             #print(f"Wrote EEG sample at {ts:.6f}s")
 
 
-# beamforming parameters (demo code)
-xInput = 0
-yInput = 0
-zInput = 50
-
-frequency_kHz = 400
-voltage = 45.0
-duration_msec = 3
-interval_msec = 10
-num_modules = 1
-
-use_external_power_supply = False
-peak_to_peak_voltage = voltage * 2
-
-db_path = Path(r"C:\Users\jshin\Downloads\OpenLIFU-python\OpenLIFU-python\db_dvc")
-db = Database(db_path)
-arr = db.load_transducer(f"openlifu_{num_modules}x400_evt1")
-arr.sort_by_pin()
-
-target = Point(position=(xInput, yInput, zInput), units="mm")
-focus = target.get_position(units="mm")
-
-positions = arr.get_positions(units="mm")
-distances = np.sqrt(np.sum((focus - positions) ** 2, axis=1)).reshape(1, -1)
-
-speed_of_sound = 1500
-tof = distances * 1e-3 / speed_of_sound
-delays = tof.max() - tof
-apodizations = np.ones((1, arr.numelements()))
-logger.info("Starting LIFU Test Script...")
-interface = LIFUInterface(ext_power_supply=use_external_power_supply)
-tx_connected, hv_connected = interface.is_device_connected()
-
-if not use_external_power_supply and not tx_connected:
-    logger.warning("TX device not connected. Attempting to turn on 12V...")
-    interface.hvcontroller.turn_hv_on()
-    time.sleep(2)
-    interface.hvcontroller.turn_12v_on()
-    time.sleep(2)
-    interface.stop_monitoring()
-    del interface
-    time.sleep(1)
-    logger.info("Reinitializing LIFU interface after powering 12V...")
-    interface = LIFUInterface(ext_power_supply=use_external_power_supply)
-    tx_connected, hv_connected = interface.is_device_connected()
-
-if not use_external_power_supply:
-    if hv_connected:
-        logger.info(f"  HV Connected: {hv_connected}")
-    else:
-        logger.error("HV NOT fully connected.")
-        sys.exit(1)
-else:
-    logger.info("Using external power supply")
-
-if tx_connected:
-    logger.info(f"  TX Connected: {tx_connected}")
-    logger.info("LIFU Device fully connected.")
-else:
-    logger.error("TX NOT fully connected.")
-    sys.exit(1)
-
-if not interface.txdevice.ping():
-    logger.error("Failed to ping the transmitter device.")
-    sys.exit(1)
-
-if not use_external_power_supply and not interface.hvcontroller.ping():
-    logger.error("Failed to ping the console device.")
-    sys.exit(1)
-
-if not use_external_power_supply:
-    try:
-        console_firmware_version = interface.hvcontroller.get_version()
-        logger.info(f"Console Firmware Version: {console_firmware_version}")
-    except Exception as e:
-        logger.error(f"Error querying console firmware version: {e}")
-
-try:
-    tx_firmware_version = interface.txdevice.get_version()
-    logger.info(f"TX Firmware Version: {tx_firmware_version}")
-except Exception as e:
-    logger.error(f"Error querying TX firmware version: {e}")
-
-logger.info("Enumerate TX7332 chips")
-num_tx_devices = interface.txdevice.enum_tx7332_devices()
-if num_tx_devices == 0:
-    raise ValueError("No TX7332 devices found.")
-elif num_tx_devices == num_modules * 2:
-    logger.info(f"Number of TX7332 devices found: {num_tx_devices}")
-    numelements = 32 * num_tx_devices
-else:
-    raise Exception(f"Number of TX7332 devices found: {num_tx_devices} != 2x{num_modules}")
-
-logger.info(f'Apodizations: {apodizations}')
-logger.info(f'Delays: {delays}')
-
-pulse = Pulse(frequency=frequency_kHz * 1e3, duration=duration_msec * 1e-3)
-
-sequence = Sequence(
-    pulse_interval=interval_msec * 1e-3,
-    pulse_count=int(60 / (interval_msec * 1e-3)),
-    pulse_train_interval=0,
-    pulse_train_count=1
-)
-
-pin_order = np.argsort([el.pin for el in arr.elements])
-
-solution = Solution(
-    delays=delays[:, pin_order],
-    apodizations=apodizations[:, pin_order],
-    transducer=arr,
-    pulse=pulse,
-    voltage=voltage,
-    sequence=sequence
-)
-
-interface.set_solution(
-    solution=solution,
-    profile_index=1,
-    profile_increment=False,
-    trigger_mode="continuous"
-)
-
-logger.info("Beamforming solution loaded.")
-
-
-# theta sonication loop (eeg + demo code)
-
 SONICATION_TIME = 5 #seconds i believe  
 COOLDOWN_TIME = 7 #sonication time + cooldown time 
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
@@ -322,16 +194,16 @@ def theta_trigger_loop():
         if sonication_enabled and theta_val < MAD_THRESHOLD and theta_val > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME:
             logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
             try:
-                eeg_trigger_outlet.push_sample(["LIFU_ON"]) #once ttl works we will take this out
+                eeg_trigger_outlet.push_sample(["LIFU_ON"]) 
                 lifu_num_outlet.push_sample([1.0]) 
                 # interface.hvcontroller.turn_hv_on()
                 # time.sleep(0.3) # this causes a lot of delay no? 
 
-                interface.start_sonication()
+                #interface.txdevice.start_trigger()
                 time.sleep(SONICATION_TIME)
                 eeg_trigger_outlet.push_sample(["LIFU_OFF"])
                 lifu_num_outlet.push_sample([0.0])
-                interface.stop_sonication() 
+                #interface.txdevice.stop_trigger() 
 
                 # interface.hvcontroller.turn_hv_off()
                 last_trigger_time = now
@@ -348,8 +220,6 @@ def run_pipeline():
     global eeg_start_lsl
     app = gp.MainApp()
     p = gp.Pipeline()
-    MU = 2.32
-    SIGMA = 4.18
     source = gp.BCICore8()
 
     theta_filter = gp.Bandpass(f_lo=4.0, f_hi=7.0, order=4)
@@ -369,20 +239,22 @@ def run_pipeline():
             "power": [0],
             "moving_average": [0],
             "theta_z": [0],
-            "hold": [0]
+            "hold": [0],
+            "channel_8": [7]
         },
         output_channels=[gp.Router.ALL],
     )
 
     scope = gp.TimeSeriesScope(
-        amplitude_limit=20, time_window=5,
+        amplitude_limit=20, time_wsindow=5,
         channel_names=[
             "Raw EEG",
             "Theta Filter (4-7Hz)",
             "Instantaneous Power",
             "Smoothed Power",
             "Theta Z-Score",
-            "Decimated Power"
+            "Decimated Power",
+            "Trigger Channel"
         ]
     )
 
@@ -405,6 +277,7 @@ def run_pipeline():
     p.connect(moving_average, merger["moving_average"])
     p.connect(hold, merger["hold"])
     p.connect(theta_z_eq, merger["theta_z"])
+    p.connect(source, merger["channel_8"])
 
 
     p.connect(merger, scope)
