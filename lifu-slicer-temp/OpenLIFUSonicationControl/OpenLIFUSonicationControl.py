@@ -1057,7 +1057,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
             raise RuntimeError("No solution loaded; cannot run sonication.")
 
         self.run_progress = 0
-        self.sonication_run_complete = False
+        #self.sonication_run_complete = False
         self.running = True
 
         
@@ -1071,10 +1071,11 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
 
     def lsl_loop(self, lifu_interface):
         logging.error(f"[THREAD] lifu_interface id: {id(lifu_interface)}")
-        streams = resolve_byprop('name', 'SlicerTestTrigger', timeout=30)
+        streams = resolve_byprop('name', 'PsychoPy_numeric', timeout=30) # should i consider making this shorter in order to not sonicate accidentally once stream is cut off?
         if not streams:
             logging.error("No EEG LSL stream found for theta.")
             self.running = False
+            self.sonication_run_complete = False
             return
 
         inlet = StreamInlet(streams[0])
@@ -1092,7 +1093,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
             logging.error(f"Received LSL sample: {sample}")
             current_time = ts
 
-            if value == "START_SONICATION" and current_time - last_trigger_time > COOLDOWN_WINDOW:
+            if value == "1.0" and current_time - last_trigger_time > COOLDOWN_WINDOW:
                 self.starting_sonication(SONICATION_TIME, lifu_interface)
                 last_trigger_time = ts
 
@@ -1126,7 +1127,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         self.running = False
         
         # TODO START SONICATION on HARDWARE
-        self.cur_lifu_interface.stop_sonication()    
+        #self.cur_lifu_interface.stop_sonication()    
 
     def abort(self) -> None:
         logging.debug("Logic.abort() called")

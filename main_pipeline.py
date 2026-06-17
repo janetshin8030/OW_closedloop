@@ -92,7 +92,7 @@ def record_eeg_lsl():
     inlet = StreamInlet(streams[0])
     print("Connected to EEG LSL stream.")
 
-    with open(f"eeg_LSL_gpype{hash_and_test}.csv", "w", newline="") as f:
+    with open(f"scope_eeg_{hash_and_test}.csv", "w", newline="") as f:
         writer = csv.writer(f)
         header_written = False
 
@@ -221,7 +221,8 @@ def run_pipeline():
     app = gp.MainApp()
     p = gp.Pipeline()
     source = gp.BCICore8()
-
+    
+    bandpass = gp.Bandpass(f_lo = 1.0, f_hi = 30.0, order = 4)
     theta_filter = gp.Bandpass(f_lo=4.0, f_hi=7.0, order=4)
     notch60 = gp.Bandstop(f_lo=58, f_hi=62, order=4)
 
@@ -230,6 +231,8 @@ def run_pipeline():
     decimator = gp.Decimator(decimation_factor=10)
     hold = gp.Hold()
     theta_z_eq = gp.Equation("(in - 2.32) / 4.18")
+
+    trigger_scaling = gp.Equation("in/2")
 
 
     merger = gp.Router(
@@ -246,7 +249,7 @@ def run_pipeline():
     )
 
     scope = gp.TimeSeriesScope(
-        amplitude_limit=20, time_wsindow=5,
+        amplitude_limit=20, time_window=10,
         channel_names=[
             "Raw EEG",
             "Theta Filter (4-7Hz)",
@@ -259,17 +262,19 @@ def run_pipeline():
     )
 
     sender = gp.LSLSender(stream_name = "EEG_gpype")  # default name/type; we’ll resolve by type='EEG'
-    online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{hash_and_test}.csv")
-    offline_writer = gp.CsvWriter(file_name=f"thetaEEG_full_{hash_and_test}.csv")
+    #online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{hash_and_test}.csv")
+    offline_writer = gp.CsvWriter(file_name=f"offline_{hash_and_test}.csv")
 
     p.connect(source, notch60)
-    p.connect(notch60, theta_filter)
+    p.connect(notch60, bandpass)
+    p.connect(bandpass,theta_filter)
     p.connect(theta_filter, power)
     p.connect(power, moving_average)
     p.connect(moving_average, theta_z_eq)
     p.connect(theta_z_eq, decimator)
     p.connect(decimator, hold)
 
+    p.connect(bandpass, trigger_scaling)
 
     p.connect(source, merger["raw_eeg"])
     p.connect(theta_filter, merger["theta_filter"])
@@ -277,12 +282,12 @@ def run_pipeline():
     p.connect(moving_average, merger["moving_average"])
     p.connect(hold, merger["hold"])
     p.connect(theta_z_eq, merger["theta_z"])
-    p.connect(source, merger["channel_8"])
+    p.connect(trigger_scaling, merger["channel_8"])
 
 
     p.connect(merger, scope)
     p.connect(merger, sender)
-    p.connect(merger, online_writer)
+   # p.connect(merger, online_writer)
     p.connect(source, offline_writer)
 
     app.add_widget(scope)

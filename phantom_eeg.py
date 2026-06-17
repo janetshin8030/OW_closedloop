@@ -337,7 +337,7 @@ if __name__ == "__main__":
     router = gp.Router(input_channels= [gp.Router.ALL, gp.Router.ALL])
     mk = gp.TimeSeriesScope.Markers
     markers = [ mk(color="r", label="up", channel=8, value=38)]
-    csv_markers =  gp.CsvWriter(file_name=f"marker.csv")
+    csv_markers =  gp.CsvWriter(file_name=f"phantom_eeg.csv")
     sender = gp.LSLSender(stream_name = "keyboard_markers")
 
     # === REAL-TIME VISUALIZATION ===
@@ -345,7 +345,7 @@ if __name__ == "__main__":
     # 50 µV range covers typical EEG signal amplitudes
     # 10-second window provides good temporal context
     scope = gp.TimeSeriesScope(
-        amplitude_limit=50, time_window=10, markers = markers  # ±50 µV range
+        amplitude_limit=100, time_window=10, markers = markers  # ±50 µV range
     )  # 10-second display
 
     # === PIPELINE CONNECTIONS ===
@@ -384,3 +384,4 @@ if __name__ == "__main__":
     app.run()  # Start GUI event loop (blocks until window closes)
     p.stop()  # Clean shutdown: stop hardware and close connections
     turn_off_console_and_tx()
+    interface.hvcontroller.turn_hv_off()

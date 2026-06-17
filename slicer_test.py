@@ -19,12 +19,12 @@ def main():
     time.sleep(3)
 
     trigger_phrase = "START_SONICATION"
-    print("\nPress UP ARROW to send a sonication trigger.\nPress ESC to quit.\n")
+    print("\nPress SPACE BAR to send a sonication trigger.\nPress ESC to quit.\n")
 
     try:
         while True:
             # If UP ARROW is pressed → send trigger
-            if keyboard.is_pressed("up"):
+            if keyboard.is_pressed("space"):
                 print(f"Sending marker: '{trigger_phrase}'")
                 outlet.push_sample([trigger_phrase])
                 time.sleep(0.2)  # debounce so holding the key doesn't spam

@@ -58,14 +58,15 @@ if __name__ == "__main__":
     p = gp.Pipeline()
 
     # Generate synthetic 8-channel EEG-like signals
-    source = gp.Generator(
-        sampling_rate=fs,
-        channel_count=8,  # 8 EEG channels
-        signal_frequency=10,  # 10 Hz alpha-like rhythm
-        signal_amplitude=10,  # Signal strength
-        signal_shape="sine",  # Clean sine waves
-        noise_amplitude=10,
-    )  # Realistic noise level
+    source = gp.BCICore8()
+    # source = gp.Generator(
+    #     sampling_rate=fs,
+    #     channel_count=8,  # 8 EEG channels
+    #     signal_frequency=10,  # 10 Hz alpha-like rhythm
+    #     signal_amplitude=10,  # Signal strength
+    #     signal_shape="sine",  # Clean sine waves
+    #     noise_amplitude=10,
+    # )  # Realistic noise level
 
     # Capture keyboard input as event markers
     keyboard = gp.Keyboard()  # Arrow keys -> event codes
