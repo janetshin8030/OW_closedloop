@@ -121,6 +121,7 @@ MAD_THRESHOLD = 60       # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
 sonication_enabled = False
+NUM_SONICATIONS = 0
 
 def listen_for_start():
     global sonication_enabled
@@ -135,6 +136,7 @@ def listen_for_start():
             break
 
 def theta_trigger_loop():
+    global NUM_SONICATIONS
     logger.info("Waiting for theta LSL stream (type='EEG')...")
     streams = resolve_byprop('name', 'EEG_gpype', timeout=30)
     if not streams:
@@ -191,11 +193,12 @@ def theta_trigger_loop():
         now = ts
         print(f"sonication_enabled={sonication_enabled}")
         
-        if sonication_enabled and theta_val < MAD_THRESHOLD and theta_val > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME:
+        if sonication_enabled and theta_val < MAD_THRESHOLD and theta_val > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME and NUM_SONICATIONS<=10:
             logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
             try:
                 eeg_trigger_outlet.push_sample(["LIFU_ON"]) 
                 lifu_num_outlet.push_sample([1.0]) 
+                NUM_SONICATIONS += 1
                 # interface.hvcontroller.turn_hv_on()
                 # time.sleep(0.3) # this causes a lot of delay no? 
 
@@ -264,6 +267,7 @@ def run_pipeline():
     sender = gp.LSLSender(stream_name = "EEG_gpype")  # default name/type; we’ll resolve by type='EEG'
     #online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{hash_and_test}.csv")
     offline_writer = gp.CsvWriter(file_name=f"offline_{hash_and_test}.csv")
+
 
     p.connect(source, notch60)
     p.connect(notch60, bandpass)
