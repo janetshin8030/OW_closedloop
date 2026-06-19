@@ -1080,8 +1080,8 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
 
         inlet = StreamInlet(streams[0])
         logging.error("Connected to EEG LSL stream for theta.")
-        last_trigger_time = 0
-        COOLDOWN_WINDOW = 10.0
+        #last_trigger_time = 0
+        #COOLDOWN_WINDOW = 10.0
         SONICATION_TIME = 5.0
 
         while self.running:
@@ -1091,11 +1091,11 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
 
             value = str(sample[0]).strip()
             logging.error(f"Received LSL sample: {sample}")
-            current_time = ts
+            #current_time = ts
 
-            if value == "1.0" and current_time - last_trigger_time > COOLDOWN_WINDOW:
+            if value == "1.0": # and current_time - last_trigger_time > COOLDOWN_WINDOW:
                 self.starting_sonication(SONICATION_TIME, lifu_interface)
-                last_trigger_time = ts
+                #last_trigger_time = ts
 
 
     def starting_sonication(self, duration, lifu_interface):

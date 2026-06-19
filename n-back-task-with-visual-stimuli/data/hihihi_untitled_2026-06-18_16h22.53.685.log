@@ -1,0 +1,47 @@
+5.9317 	WARNING 	User requested fullscreen with size [1024  768], but screen is actually [1920, 1200]. Using actual size
+6.4956 	EXP 	Created window1 = Window(allowGUI=False, allowStencil=False, autoLog=True, backendConf=UNKNOWN, backgroundFit=<method-wrapper '__getattribute__' of attributeSetter object at 0x0000022B020F8F10>, backgroundImage=<method-wrapper '__getattribute__' of attributeSetter object at 0x0000022B020F8EB0>, bitsMode=UNKNOWN, blendMode='avg', bpc=(8, 8, 8), color=array([0, 0, 0]), colorSpace='rgb', depthBits=8, fullscr=True, gamma=None, gammaErrorPolicy='raise', infoMsg=UNKNOWN, lms=UNKNOWN, monitor=<psychopy.monitors.calibTools.Monitor object at 0x0000022B021A69B0>, multiSample=False, name='window1', numSamples=2, pos=[np.float64(0.0), np.float64(0.0)], screen=0, size=array([1920, 1200]), stencilBits=0, stereo=False, title='PsychoPy', units='height', useFBO=True, useRetina=False, viewOri=0.0, viewPos=None, viewScale=None, waitBlanking=True, winType='pyglet')
+6.4957 	EXP 	window1: backgroundImage = ''
+6.4957 	EXP 	window1: backgroundFit = 'none'
+6.9089 	EXP 	window1: Attempting to measure frame rate of screen (0) ...
+6.9090 	EXP 	window1: recordFrameIntervals = False
+7.0837 	EXP 	window1: recordFrameIntervals = True
+7.9816 	EXP 	window1: recordFrameIntervals = False
+7.9817 	EXP 	Screen (0) actual frame rate measured at 123.91Hz
+8.1274 	EXP 	untitled: status = STARTED
+8.2498 	EXP 	Created instructions_2 = TextStim(__class__=<class 'psychopy.visual.text.TextStim'>, alignHoriz=method-wrapper(...), alignText='center', alignVert=method-wrapper(...), anchorHoriz='center', anchorVert='center', antialias=True, autoDraw=False, autoLog=True, bold=False, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, font='Arial', fontFiles=[], height=np.float64(0.05), italic=False, languageStyle='LTR', name='instructions_2', opacity=1, ori=0, pos=array([0., 0.]), rgb=UNKNOWN, text=str(...), units='height', win=Window(...), wrapWidth=1)
+8.2553 	EXP 	Created fixation_1 = TextStim(__class__=<class 'psychopy.visual.text.TextStim'>, alignHoriz=method-wrapper(...), alignText='center', alignVert=method-wrapper(...), anchorHoriz='center', anchorVert='center', antialias=True, autoDraw=False, autoLog=True, bold=False, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, font='Arial', fontFiles=[], height=np.float64(0.05), italic=False, languageStyle='LTR', name='fixation_1', opacity=1, ori=0, pos=array([0., 0.]), rgb=UNKNOWN, text='+', units='height', win=Window(...), wrapWidth=1)
+8.2568 	WARNING 	Requested image 'grid' not found but similar filename 'grid.png' exists. This will be used instead but changing the filename is advised.
+8.3357 	EXP 	Created grid_lines_2 = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=np.False_, flipVert=np.False_, image='grid', interpolate=True, mask=None, maskParams=None, name='grid_lines_2', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.6, 0.6]), texRes=128, units='height', win=Window(...))
+8.3390 	EXP 	Created target_square_2 = Rect(__class__=<class 'psychopy.visual.rect.Rect'>, anchor=('center', 'center'), autoDraw=False, autoLog=True, closeShape=True, color=method-wrapper(...), colorSpace='rgb', contrast=None, depth=-1.0, draggable=False, fillColor=array([1., 1., 1.]), fillColorSpace='rgb', fillRGB=array([1., 1., 1.]), interpolate=True, lineColor=array([0., 0., 0.]), lineColorSpace='rgb', lineRGB=array([0, 0, 0]), lineWidth=1, name='target_square_2', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.15, 0.15]), units='height', vertices=ndarray(...), win=Window(...))
+8.3439 	EXP 	Created fixation_3 = TextStim(__class__=<class 'psychopy.visual.text.TextStim'>, alignHoriz=method-wrapper(...), alignText='center', alignVert=method-wrapper(...), anchorHoriz='center', anchorVert='center', antialias=True, autoDraw=False, autoLog=True, bold=False, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=-2.0, draggable=False, flipHoriz=False, flipVert=False, font='Arial', fontFiles=[], height=np.float64(0.05), italic=False, languageStyle='LTR', name='fixation_3', opacity=1, ori=0, pos=array([0., 0.]), rgb=UNKNOWN, text='+', units='height', win=Window(...), wrapWidth=1)
+8.4244 	EXP 	Created thank_you = TextStim(__class__=<class 'psychopy.visual.text.TextStim'>, alignHoriz=method-wrapper(...), alignText='center', alignVert=method-wrapper(...), anchorHoriz='center', anchorVert='center', antialias=True, autoDraw=False, autoLog=True, bold=False, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, font='Arial', fontFiles=[], height=np.float64(0.1), italic=False, languageStyle='LTR', name='thank_you', opacity=1, ori=0, pos=array([0., 0.]), rgb=UNKNOWN, text=str(...), units='height', win=Window(...), wrapWidth=1)
+0.0150 	EXP 	instructions_2: autoDraw = True
+1.9287 	EXP 	Device response: <KeyPress from None: t=1.9187051000189967, value=space, duration=None>
+1.9324 	DATA 	Keypress: space
+1.9374 	EXP 	instructions_2: autoDraw = False
+1.9374 	EXP 	fixation_1: autoDraw = True
+2.0321 	EXP 	Device response: <KeyPress from None: t=1.9187051000189967, value=space, duration=0.09186779998708516>
+2.9374 	EXP 	Imported Nback-trial-1.xlsx as conditions, 28 conditions, 2 params
+2.9387 	EXP 	New trial (rep=0, index=0): <Trial 0 (0 in rep 0) data={'location': [0, 0], 'corrAns': None, 'thisN': 0, 'thisTrialN': 0, 'thisRepN': 0}>
+2.9469 	EXP 	fixation_1: autoDraw = False
+2.9469 	EXP 	fixation_1: autoDraw = False
+2.9469 	EXP 	grid_lines_2: autoDraw = True
+2.9469 	EXP 	target_square_2: autoDraw = True
+3.9244 	EXP 	fixation_3: autoDraw = True
+3.9407 	EXP 	target_square_2: autoDraw = False
+4.9153 	EXP 	fixation_3: autoDraw = False
+4.9323 	EXP 	New trial (rep=0, index=1): <Trial 1 (1 in rep 0) data={'location': [0.2, 0], 'corrAns': None, 'thisN': 1, 'thisTrialN': 1, 'thisRepN': 0}>
+4.9399 	EXP 	grid_lines_2: autoDraw = False
+4.9399 	EXP 	target_square_2: autoDraw = False
+4.9399 	EXP 	fixation_3: autoDraw = False
+4.9399 	EXP 	grid_lines_2: autoDraw = True
+4.9399 	EXP 	target_square_2: autoDraw = True
+5.9230 	EXP 	fixation_3: autoDraw = True
+5.9328 	EXP 	target_square_2: autoDraw = False
+5.9918 	EXP 	Device response: <KeyPress from None: t=5.984242600039579, value=escape, duration=None>
+5.9934 	DATA 	Keypress: escape
+6.0837 	EXP 	Device response: <KeyPress from None: t=5.984242600039579, value=escape, duration=0.09222179994685575>
+6.0838 	EXP 	untitled: status = STOPPED
+6.0903 	EXP 	grid_lines_2: autoDraw = False
+6.0903 	EXP 	fixation_3: autoDraw = False
+6.0906 	EXP 	untitled: status = STOPPED

@@ -7,7 +7,7 @@ import sys
 import gpype as gp
 
 # main issue is that if in the beginning it makes the MAD too small, it will never adjust properly
-hash_and_test = "stroop_test"
+hash_and_test = "2back"
 DURATION = 100  # seconds
 BUFFER_SIZE = 200
 MAD_THRESHOLD = 6

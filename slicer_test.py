@@ -18,7 +18,7 @@ def main():
     print("Waiting 3 seconds for Slicer to discover the stream...")
     time.sleep(3)
 
-    trigger_phrase = "START_SONICATION"
+    trigger_phrase = "1.0"
     print("\nPress SPACE BAR to send a sonication trigger.\nPress ESC to quit.\n")
 
     try:
