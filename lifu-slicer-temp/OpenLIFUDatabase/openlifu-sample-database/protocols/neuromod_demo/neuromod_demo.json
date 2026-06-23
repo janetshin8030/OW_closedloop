@@ -9,9 +9,9 @@
         "duration": 0.005
     },
     "sequence": {
-        "pulse_interval": 0.1,
-        "pulse_count": 50,
-        "pulse_train_interval": 7.0,
+        "pulse_interval": 0.2,
+        "pulse_count": 25,
+        "pulse_train_interval": 10.0,
         "pulse_train_count": 1
     },
     "focal_pattern": {

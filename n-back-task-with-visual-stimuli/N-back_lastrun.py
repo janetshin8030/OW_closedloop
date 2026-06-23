@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2026.1.3),
-    on June 19, 2026, at 10:49
+    on June 22, 2026, at 15:59
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -796,9 +796,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         response_2.rt = []
         _response_2_allKeys = []
         # Run 'Begin Routine' code from code_2
-        last_lifu_event= None
-        last_lifu_time = None
+        from pylsl import local_clock
+        last_lifu_event = None
+        last_lifu_time = local_clock() 
         marker_outlet.push_sample(["START_EXPERIMENT"])
+        
         # store start times for N_back_2_trials
         N_back_2_trials.tStartRefresh = win.getFutureFlipTime(clock=globalClock)
         N_back_2_trials.tStart = globalClock.getTime(format='float')
@@ -980,11 +982,12 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     else:
                         response_2.corr = 0
             # Run 'Each Frame' code from code_2
-            if lifu_inlet is not None: 
-                sample, ts = lifu_inlet.pull_sample(timeout = 0.0)
-                if sample is not None: 
+            if lifu_inlet is not None:
+                sample, ts = lifu_inlet.pull_sample(timeout=0.0)
+            
+                if sample is not None:
                     last_lifu_event = sample[0]
-                    last_lifu_time = ts
+            
             
             # check for quit (typically the Esc key)
             if defaultKeyboard.getKeys(keyList=["escape"]):

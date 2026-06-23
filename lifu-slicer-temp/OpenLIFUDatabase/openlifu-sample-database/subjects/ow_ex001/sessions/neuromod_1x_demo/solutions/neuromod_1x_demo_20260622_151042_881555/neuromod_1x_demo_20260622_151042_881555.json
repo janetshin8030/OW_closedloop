@@ -1,0 +1,1523 @@
+{
+    "id": "neuromod_1x_demo_20260622_151042_881555",
+    "name": "Solution 20260622_151042_881555",
+    "protocol_id": "neuromod_demo",
+    "transducer": {
+        "id": "openlifu_1x400_evt1",
+        "name": "OpenLIFU 1x 400kHz EVT1",
+        "elements": [
+            {
+                "index": 1,
+                "position": [
+                    -17.5,
+                    17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 1,
+                "units": "mm"
+            },
+            {
+                "index": 2,
+                "position": [
+                    -17.5,
+                    12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 2,
+                "units": "mm"
+            },
+            {
+                "index": 3,
+                "position": [
+                    -17.5,
+                    7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 3,
+                "units": "mm"
+            },
+            {
+                "index": 4,
+                "position": [
+                    -17.5,
+                    2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 4,
+                "units": "mm"
+            },
+            {
+                "index": 5,
+                "position": [
+                    -17.5,
+                    -2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 5,
+                "units": "mm"
+            },
+            {
+                "index": 6,
+                "position": [
+                    -17.5,
+                    -7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 6,
+                "units": "mm"
+            },
+            {
+                "index": 7,
+                "position": [
+                    -17.5,
+                    -12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 7,
+                "units": "mm"
+            },
+            {
+                "index": 8,
+                "position": [
+                    -17.5,
+                    -17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 8,
+                "units": "mm"
+            },
+            {
+                "index": 9,
+                "position": [
+                    -12.5,
+                    17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 9,
+                "units": "mm"
+            },
+            {
+                "index": 10,
+                "position": [
+                    -12.5,
+                    12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 10,
+                "units": "mm"
+            },
+            {
+                "index": 11,
+                "position": [
+                    -12.5,
+                    7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 11,
+                "units": "mm"
+            },
+            {
+                "index": 12,
+                "position": [
+                    -12.5,
+                    2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 12,
+                "units": "mm"
+            },
+            {
+                "index": 13,
+                "position": [
+                    -12.5,
+                    -2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 13,
+                "units": "mm"
+            },
+            {
+                "index": 14,
+                "position": [
+                    -12.5,
+                    -7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 14,
+                "units": "mm"
+            },
+            {
+                "index": 15,
+                "position": [
+                    -12.5,
+                    -12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 15,
+                "units": "mm"
+            },
+            {
+                "index": 16,
+                "position": [
+                    -12.5,
+                    -17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 16,
+                "units": "mm"
+            },
+            {
+                "index": 17,
+                "position": [
+                    -7.5,
+                    17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 17,
+                "units": "mm"
+            },
+            {
+                "index": 18,
+                "position": [
+                    -7.5,
+                    12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 18,
+                "units": "mm"
+            },
+            {
+                "index": 19,
+                "position": [
+                    -7.5,
+                    7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 19,
+                "units": "mm"
+            },
+            {
+                "index": 20,
+                "position": [
+                    -7.5,
+                    2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 20,
+                "units": "mm"
+            },
+            {
+                "index": 21,
+                "position": [
+                    -7.5,
+                    -2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 21,
+                "units": "mm"
+            },
+            {
+                "index": 22,
+                "position": [
+                    -7.5,
+                    -7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 22,
+                "units": "mm"
+            },
+            {
+                "index": 23,
+                "position": [
+                    -7.5,
+                    -12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 23,
+                "units": "mm"
+            },
+            {
+                "index": 24,
+                "position": [
+                    -7.5,
+                    -17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 24,
+                "units": "mm"
+            },
+            {
+                "index": 25,
+                "position": [
+                    -2.5,
+                    17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 25,
+                "units": "mm"
+            },
+            {
+                "index": 26,
+                "position": [
+                    -2.5,
+                    12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 26,
+                "units": "mm"
+            },
+            {
+                "index": 27,
+                "position": [
+                    -2.5,
+                    7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 27,
+                "units": "mm"
+            },
+            {
+                "index": 28,
+                "position": [
+                    -2.5,
+                    2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 28,
+                "units": "mm"
+            },
+            {
+                "index": 29,
+                "position": [
+                    -2.5,
+                    -2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 29,
+                "units": "mm"
+            },
+            {
+                "index": 30,
+                "position": [
+                    -2.5,
+                    -7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 30,
+                "units": "mm"
+            },
+            {
+                "index": 31,
+                "position": [
+                    -2.5,
+                    -12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 31,
+                "units": "mm"
+            },
+            {
+                "index": 32,
+                "position": [
+                    -2.5,
+                    -17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 32,
+                "units": "mm"
+            },
+            {
+                "index": 33,
+                "position": [
+                    2.5,
+                    17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 33,
+                "units": "mm"
+            },
+            {
+                "index": 34,
+                "position": [
+                    2.5,
+                    12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 34,
+                "units": "mm"
+            },
+            {
+                "index": 35,
+                "position": [
+                    2.5,
+                    7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 35,
+                "units": "mm"
+            },
+            {
+                "index": 36,
+                "position": [
+                    2.5,
+                    2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 36,
+                "units": "mm"
+            },
+            {
+                "index": 37,
+                "position": [
+                    2.5,
+                    -2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 37,
+                "units": "mm"
+            },
+            {
+                "index": 38,
+                "position": [
+                    2.5,
+                    -7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 38,
+                "units": "mm"
+            },
+            {
+                "index": 39,
+                "position": [
+                    2.5,
+                    -12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 39,
+                "units": "mm"
+            },
+            {
+                "index": 40,
+                "position": [
+                    2.5,
+                    -17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 40,
+                "units": "mm"
+            },
+            {
+                "index": 41,
+                "position": [
+                    7.5,
+                    17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 41,
+                "units": "mm"
+            },
+            {
+                "index": 42,
+                "position": [
+                    7.5,
+                    12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 42,
+                "units": "mm"
+            },
+            {
+                "index": 43,
+                "position": [
+                    7.5,
+                    7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 43,
+                "units": "mm"
+            },
+            {
+                "index": 44,
+                "position": [
+                    7.5,
+                    2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 44,
+                "units": "mm"
+            },
+            {
+                "index": 45,
+                "position": [
+                    7.5,
+                    -2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 45,
+                "units": "mm"
+            },
+            {
+                "index": 46,
+                "position": [
+                    7.5,
+                    -7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 46,
+                "units": "mm"
+            },
+            {
+                "index": 47,
+                "position": [
+                    7.5,
+                    -12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 47,
+                "units": "mm"
+            },
+            {
+                "index": 48,
+                "position": [
+                    7.5,
+                    -17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 48,
+                "units": "mm"
+            },
+            {
+                "index": 49,
+                "position": [
+                    12.5,
+                    17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 49,
+                "units": "mm"
+            },
+            {
+                "index": 50,
+                "position": [
+                    12.5,
+                    12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 50,
+                "units": "mm"
+            },
+            {
+                "index": 51,
+                "position": [
+                    12.5,
+                    7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 51,
+                "units": "mm"
+            },
+            {
+                "index": 52,
+                "position": [
+                    12.5,
+                    2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 52,
+                "units": "mm"
+            },
+            {
+                "index": 53,
+                "position": [
+                    12.5,
+                    -2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 53,
+                "units": "mm"
+            },
+            {
+                "index": 54,
+                "position": [
+                    12.5,
+                    -7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 54,
+                "units": "mm"
+            },
+            {
+                "index": 55,
+                "position": [
+                    12.5,
+                    -12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 55,
+                "units": "mm"
+            },
+            {
+                "index": 56,
+                "position": [
+                    12.5,
+                    -17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 56,
+                "units": "mm"
+            },
+            {
+                "index": 57,
+                "position": [
+                    17.5,
+                    17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 57,
+                "units": "mm"
+            },
+            {
+                "index": 58,
+                "position": [
+                    17.5,
+                    12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 58,
+                "units": "mm"
+            },
+            {
+                "index": 59,
+                "position": [
+                    17.5,
+                    7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 59,
+                "units": "mm"
+            },
+            {
+                "index": 60,
+                "position": [
+                    17.5,
+                    2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 60,
+                "units": "mm"
+            },
+            {
+                "index": 61,
+                "position": [
+                    17.5,
+                    -2.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 61,
+                "units": "mm"
+            },
+            {
+                "index": 62,
+                "position": [
+                    17.5,
+                    -7.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 62,
+                "units": "mm"
+            },
+            {
+                "index": 63,
+                "position": [
+                    17.5,
+                    -12.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 63,
+                "units": "mm"
+            },
+            {
+                "index": 64,
+                "position": [
+                    17.5,
+                    -17.5,
+                    0.0
+                ],
+                "orientation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    4.7,
+                    4.7
+                ],
+                "sensitivity": 1.0,
+                "pin": 64,
+                "units": "mm"
+            }
+        ],
+        "frequency": 400600.0,
+        "units": "mm",
+        "attrs": {},
+        "registration_surface_filename": "openlifu_1x400_evt1.surf.obj",
+        "transducer_body_filename": "openlifu_1x400_evt1.body.obj",
+        "standoff_transform": [
+            [
+                1.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                0.0,
+                1.0,
+                0.0,
+                0.0
+            ],
+            [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+            ],
+            [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
+        ],
+        "sensitivity": 1000.0,
+        "crosstalk_frac": 0.0,
+        "crosstalk_dist": 0.0,
+        "module_invert": [
+            false
+        ]
+    },
+    "date_created": "2026-06-22T15:10:42.881555",
+    "description": "A solution computed for the Neuromodulation Demo protocol with transducer OpenLIFU 1x 400kHz EVT1 for target Target_1-in-transducer-coords. This solution was created for the session neuromod_1x_demo for subject ow_ex001.",
+    "delays": [
+        [
+            7.647204541086291e-06,
+            8.3933923664635e-06,
+            8.570725040106276e-06,
+            8.16260770464302e-06,
+            7.206335501214008e-06,
+            5.777997457561123e-06,
+            3.9675573984013045e-06,
+            1.8594119862604995e-06,
+            9.022597739906314e-06,
+            9.830582739736124e-06,
+            1.0023463692420546e-05,
+            9.580075476239377e-06,
+            8.547744266191955e-06,
+            7.020324388457868e-06,
+            5.104043086926778e-06,
+            2.8937821886049843e-06,
+            9.866519707764776e-06,
+            1.0717905740888563e-05,
+            1.0921834927772267e-05,
+            1.0453459609685149e-05,
+            9.368131223548604e-06,
+            7.773342570960302e-06,
+            5.786962807954174e-06,
+            3.5106828894571354e-06,
+            1.0096266703800174e-05,
+            1.0960310458924987e-05,
+            1.1167483007996634e-05,
+            1.06917848274811e-05,
+            9.591067735809197e-06,
+            7.97697808926196e-06,
+            5.970795809976567e-06,
+            3.67609954912277e-06,
+            9.686502832588818e-06,
+            1.0528233966271231e-05,
+            1.0729695764835138e-05,
+            1.0266895145202221e-05,
+            9.193325517610213e-06,
+            7.6133644525924945e-06,
+            5.642282572128143e-06,
+            3.380300260272722e-06,
+            8.681523236340018e-06,
+            9.47322649648492e-06,
+            9.661990724696466e-06,
+            9.227929373603264e-06,
+            8.215570571090949e-06,
+            6.713897291472638e-06,
+            4.824806164548874e-06,
+            2.6404995595158195e-06,
+            7.1744085682103945e-06,
+            7.90152250460291e-06,
+            8.074096812918431e-06,
+            7.676797363254094e-06,
+            6.744137279525904e-06,
+            5.347123083045249e-06,
+            3.5708165990656785e-06,
+            1.4962235523947259e-06,
+            5.272307604015975e-06,
+            5.9317634746439195e-06,
+            6.087601785851502e-06,
+            5.728433423678705e-06,
+            4.880020646261662e-06,
+            3.5968893870269746e-06,
+            1.9473583367040155e-06,
+            0.0
+        ]
+    ],
+    "apodizations": [
+        [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    ],
+    "pulse": {
+        "frequency": 400000.0,
+        "amplitude": 1.0,
+        "duration": 0.005
+    },
+    "voltage": 28.910583669750977,
+    "sequence": {
+        "pulse_interval": 0.2,
+        "pulse_count": 25,
+        "pulse_train_interval": 10.0,
+        "pulse_train_count": 1
+    },
+    "foci": [
+        {
+            "position": [
+                -3.2100135396622704,
+                8.49226715128502,
+                23.43752880056219
+            ],
+            "id": "Target_1-in-transducer-coords",
+            "name": "sonication target",
+            "color": [
+                1.0,
+                0.0,
+                0.0
+            ],
+            "radius": 1.0,
+            "dims": [
+                "x",
+                "y",
+                "z"
+            ],
+            "units": "mm"
+        }
+    ],
+    "target": {
+        "position": [
+            -3.2100135396622704,
+            8.49226715128502,
+            23.43752880056219
+        ],
+        "id": "Target_1-in-transducer-coords",
+        "name": "sonication target",
+        "color": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "radius": 1.0,
+        "dims": [
+            "x",
+            "y",
+            "z"
+        ],
+        "units": "mm"
+    },
+    "approved": false
+}
