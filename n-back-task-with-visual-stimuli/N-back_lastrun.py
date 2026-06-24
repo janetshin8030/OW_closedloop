@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2026.1.3),
-    on June 22, 2026, at 15:59
+    on June 23, 2026, at 10:03
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -747,39 +747,39 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     thisExp.nextEntry()
     
     # set up handler to look after randomisation of conditions etc
-    trials_2 = data.TrialHandler2(
-        name='trials_2',
-        nReps=2, 
+    trials = data.TrialHandler2(
+        name='trials',
+        nReps=1, 
         method='sequential', 
         extraInfo=expInfo, 
         originPath=-1, 
-        trialList=data.importConditions('Nback-trial-1.xlsx'), 
+        trialList=data.importConditions('trial_1.xlsx'), 
         seed=None, 
         isTrials=True, 
     )
-    thisExp.addLoop(trials_2)  # add the loop to the experiment
-    thisTrial_2 = trials_2.trialList[0]  # so we can initialise stimuli with some values
-    # abbreviate parameter names if possible (e.g. rgb = thisTrial_2.rgb)
-    if thisTrial_2 != None:
-        for paramName in thisTrial_2:
-            globals()[paramName] = thisTrial_2[paramName]
+    thisExp.addLoop(trials)  # add the loop to the experiment
+    thisTrial = trials.trialList[0]  # so we can initialise stimuli with some values
+    # abbreviate parameter names if possible (e.g. rgb = thisTrial.rgb)
+    if thisTrial != None:
+        for paramName in thisTrial:
+            globals()[paramName] = thisTrial[paramName]
     if thisSession is not None:
         # if running in a Session with a Liaison client, send data up to now
         thisSession.sendExperimentData()
     
-    for thisTrial_2 in trials_2:
-        trials_2.status = STARTED
-        if hasattr(thisTrial_2, 'status'):
-            thisTrial_2.status = STARTED
-        currentLoop = trials_2
+    for thisTrial in trials:
+        trials.status = STARTED
+        if hasattr(thisTrial, 'status'):
+            thisTrial.status = STARTED
+        currentLoop = trials
         thisExp.timestampOnFlip(win, 'thisRow.t', format=globalClock.format)
         if thisSession is not None:
             # if running in a Session with a Liaison client, send data up to now
             thisSession.sendExperimentData()
-        # abbreviate parameter names if possible (e.g. rgb = thisTrial_2.rgb)
-        if thisTrial_2 != None:
-            for paramName in thisTrial_2:
-                globals()[paramName] = thisTrial_2[paramName]
+        # abbreviate parameter names if possible (e.g. rgb = thisTrial.rgb)
+        if thisTrial != None:
+            for paramName in thisTrial:
+                globals()[paramName] = thisTrial[paramName]
         
         # --- Prepare to start Routine "N_back_2_trials" ---
         # create an object to store info about Routine N_back_2_trials
@@ -826,7 +826,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         N_back_2_trials.forceEnded = routineForceEnded = not continueRoutine
         while continueRoutine and routineTimer.getTime() < 2.0:
             # if trial has changed, end Routine now
-            if hasattr(thisTrial_2, 'status') and thisTrial_2.status == STOPPING:
+            if hasattr(thisTrial, 'status') and thisTrial.status == STOPPING:
                 continueRoutine = False
             # get current time
             t = routineTimer.getTime()
@@ -1039,12 +1039,12 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                response_2.corr = 1;  # correct non-response
             else:
                response_2.corr = 0;  # failed to respond (incorrectly)
-        # store data for trials_2 (TrialHandler)
-        trials_2.addData('response_2.keys',response_2.keys)
-        trials_2.addData('response_2.corr', response_2.corr)
+        # store data for trials (TrialHandler)
+        trials.addData('response_2.keys',response_2.keys)
+        trials.addData('response_2.corr', response_2.corr)
         if response_2.keys != None:  # we had a response
-            trials_2.addData('response_2.rt', response_2.rt)
-            trials_2.addData('response_2.duration', response_2.duration)
+            trials.addData('response_2.rt', response_2.rt)
+            trials.addData('response_2.duration', response_2.duration)
         # Run 'End Routine' code from code_2
         thisExp.addData('LIFU_marker', last_lifu_event)
         thisExp.addData('LSL_Time', last_lifu_time)
@@ -1055,11 +1055,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             routineTimer.reset()
         else:
             routineTimer.addTime(-2.000000)
-        # mark thisTrial_2 as finished
-        if hasattr(thisTrial_2, 'status'):
-            thisTrial_2.status = FINISHED
+        # mark thisTrial as finished
+        if hasattr(thisTrial, 'status'):
+            thisTrial.status = FINISHED
         # if awaiting a pause, pause now
-        if trials_2.status == PAUSED:
+        if trials.status == PAUSED:
             thisExp.status = PAUSED
             pauseExperiment(
                 thisExp=thisExp, 
@@ -1067,11 +1067,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 timers=[globalClock], 
             )
             # once done pausing, restore running status
-            trials_2.status = STARTED
+            trials.status = STARTED
         thisExp.nextEntry()
         
-    # completed 2 repeats of 'trials_2'
-    trials_2.status = FINISHED
+    # completed 1 repeats of 'trials'
+    trials.status = FINISHED
     
     if thisSession is not None:
         # if running in a Session with a Liaison client, send data up to now
