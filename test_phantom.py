@@ -60,8 +60,8 @@ yInput = 0
 zInput = 50
 
 
-first_target_runtime_sec = 5
-second_target_runtime_sec = 5
+first_target_runtime_sec = 15
+second_target_runtime_sec = 10
 
 
 frequency_kHz = 400 # Frequency in kHz

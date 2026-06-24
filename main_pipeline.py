@@ -115,8 +115,8 @@ def record_eeg_lsl():
 SONICATION_TIME = 5 #seconds i believe  
 COOLDOWN_TIME = 15 #sonication time + cooldown time 
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
-MU = 3.12
-SIGMA =  5.31
+MU = 1.55
+SIGMA =  3.70
 MAD_THRESHOLD = 6       # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
