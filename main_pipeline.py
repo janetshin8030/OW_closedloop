@@ -14,7 +14,6 @@ if os.name == 'nt':
 else:
     import select
 
-import keyboard
 import numpy as np
 from pylsl import StreamInlet, local_clock, resolve_byprop, StreamInfo, StreamOutlet
 from hash_func import hash_and_test
@@ -65,19 +64,18 @@ def record_lifu_numeric():
 
     with open(f"lifu_markers_1_{hash_and_test}.csv", "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["time","marker", "LSL_timestamp"])  # Header
+        writer.writerow(["Time", "marker", "LSL_timestamp"])  # Header
 
         while RUNNING:
-            sample, ts= inlet.pull_sample(timeout=1.0)
+            sample, ts= inlet.pull_sample(timeout=0.01)
             if sample is None:
                 continue
             if sample:
                 relative_ts = ts - eeg_start_lsl
-                writer.writerow([relative_ts, sample[0], ts])
-                pass
-                # f.flush()              # <--- forces Python to write
-                # os.fsync(f.fileno())   # <--- forces OS to write
-                #print("Wrote marker:", sample[0])
+                writer.writerow([relative_ts, sample[0],ts])
+                f.flush()              # <--- forces Python to write
+                os.fsync(f.fileno())   # <--- forces OS to write
+                print("Wrote marker:", sample[0])
 
 
 def record_eeg_lsl():
@@ -99,7 +97,7 @@ def record_eeg_lsl():
         header_written = False
 
         while RUNNING:
-            sample, ts = inlet.pull_sample(timeout=1.0)
+            sample, ts = inlet.pull_sample(timeout=0.01)
             if sample is None:
                 continue
 
@@ -117,12 +115,12 @@ def record_eeg_lsl():
 SONICATION_TIME = 5 #seconds i believe  
 COOLDOWN_TIME = 15 #sonication time + cooldown time 
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
-MU = 2.32
-SIGMA =  4.18
+MU = 3.12
+SIGMA =  5.31
 MAD_THRESHOLD = 6       # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
-sonication_enabled = False
+sonication_enabled = True
 NUM_SONICATIONS = 0
 
 
@@ -194,7 +192,7 @@ def theta_trigger_loop():
         #     f.write(f"{ts_rel},{theta_z}\n")
         
         now = ts
-        #print(f"sonication_enabled={sonication_enabled}")
+        print(f"sonication_enabled={sonication_enabled}")
         
         if sonication_enabled and theta_val < MAD_THRESHOLD and theta_val > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME and NUM_SONICATIONS<=10:
             logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
@@ -217,33 +215,7 @@ def theta_trigger_loop():
             except Exception as e:
                 logger.error(f"Error during theta-triggered sonication: {e}")
 
-def lsl_to_keyboard_bridge():
-    """
-    Listens for 'LIFU_ON' over LSL in the background.
-    When it hears it, it fakes a 'space' key press to trick g.Pype.
-    """
-    print("Bridge: Looking for LSL stream 'EEG_LIFU_events'...")
-    try:
-        streams = resolve_byprop("name", "EEG_LIFU_events", timeout=5.0)
-        if not streams:
-            print("Bridge Warning: 'EEG_LIFU_events' stream not found. Auto-marking disabled.")
-            return
-        
-        inlet = StreamInlet(streams[0])
-        print("Bridge: Connected! Listening for 'LIFU_ON' to trigger spacebar...")
-        
-        while RUNNING:
-            # Check for a marker (non-blocking)
-            sample, ts = inlet.pull_sample(timeout=0.1)
-            if sample is not None:
-                if str(sample[0]).strip() == "LIFU_ON":
-                    print("--- [LSL Bridge] Caught LIFU_ON -> Pressing Spacebar ---")
-                    keyboard.press('up')
-                    time.sleep(0.020)   # 20 ms
-                    keyboard.release('up')
-                    
-    except Exception as e:
-        print(f"Bridge Error: {e}")
+
 # gp pipeline for EEG headset
 
 fs = 250 
@@ -266,21 +238,22 @@ def run_pipeline():
 
     trigger_scaling = gp.Equation("in/2")
 
-    keyboard = gp.Keyboard()
-    #router = gp.Router(input_channels= [gp.Router.ALL, gp.Router.ALL])
-    mk = gp.TimeSeriesScope.Markers
-    markers = [ mk(color="r", label="up", channel=7, value=38)]
 
     merger = gp.Router(
         input_channels={
-            "raw_eeg": [0],
+            "channel_1": [0],
+            "channel_2": [1],
+            "channel_3": [2],
+            "channel_4": [3],
+            "channel_5": [4],
+            "channel_6": [5],
+            "channel_7": [6],
             "theta_filter": [0],
             "power": [0],
             "moving_average": [0],
             "theta_z": [0],
             "hold": [0],
-            "channel_8": [7],
-            "Markers": [0]
+            "channel_8": [7]
         },
         output_channels=[gp.Router.ALL],
     )
@@ -288,21 +261,25 @@ def run_pipeline():
     scope = gp.TimeSeriesScope(
         amplitude_limit=20, time_window=10,
         channel_names=[
-            "Raw EEG",
+            "Channel 1",
+            "Channel 2",
+            "Channel 3",
+            "Channel 4",
+            "Channel 5",
+            "Channel 6",
+            "Channel 7",
             "Theta Filter (4-7Hz)",
             "Instantaneous Power",
             "Smoothed Power",
             "Theta Z-Score",
             "Decimated Power",
-            "Trigger Channel",
-            "Markers"
+            "Trigger Channel"
         ]
     )
 
     sender = gp.LSLSender(stream_name = "EEG_gpype")  # default name/type; we’ll resolve by type='EEG'
     online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{hash_and_test}.csv")
-    offline_writer = gp.CsvWriter(file_name=f"offline_{hash_and_test}.csv")
-
+    offline_writer = gp.CsvWriter(file_name=f"thetaEEG_full_{hash_and_test}.csv")
 
     p.connect(source, notch60)
     p.connect(notch60, bandpass)
@@ -315,14 +292,20 @@ def run_pipeline():
 
     p.connect(bandpass, trigger_scaling)
 
-    p.connect(source, merger["raw_eeg"])
+    p.connect(source, merger["channel_1"])
+    p.connect(source, merger["channel_2"])
+    p.connect(source, merger["channel_3"])
+    p.connect(source, merger["channel_4"])
+    p.connect(source, merger["channel_5"])
+    p.connect(source, merger["channel_6"])
+    p.connect(source, merger["channel_7"])
     p.connect(theta_filter, merger["theta_filter"])
     p.connect(power, merger["power"])
     p.connect(moving_average, merger["moving_average"])
     p.connect(hold, merger["hold"])
     p.connect(theta_z_eq, merger["theta_z"])
     p.connect(trigger_scaling, merger["channel_8"])
-    p.connect(keyboard, merger["Markers"])
+
 
     p.connect(merger, scope)
     p.connect(merger, sender)
@@ -364,9 +347,6 @@ if __name__ == "__main__":
         eeg_record_thread = threading.Thread(target=record_eeg_lsl, daemon=False)
         eeg_record_thread.start()
 
-        bridge_thread = threading.Thread(target=lsl_to_keyboard_bridge, daemon=True)
-        bridge_thread.start()
-
         # Start g.Pype pipeline
         run_pipeline()
 
@@ -376,9 +356,8 @@ if __name__ == "__main__":
 
             try:
                 interface.hvcontroller.turn_hv_off()
-            except: 
+            except:
                 pass
 
             theta_thread.join()
             lifu_record_thread.join()
-            bridge_thread.join()
