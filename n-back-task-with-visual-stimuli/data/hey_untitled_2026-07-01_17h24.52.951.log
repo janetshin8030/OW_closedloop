@@ -1,0 +1,480 @@
+24.3751 	WARNING 	User requested fullscreen with size [1024  768], but screen is actually [1920, 1200]. Using actual size
+25.4238 	EXP 	Created window1 = Window(allowGUI=False, allowStencil=False, autoLog=True, backendConf=UNKNOWN, backgroundFit=<method-wrapper '__getattribute__' of attributeSetter object at 0x000001FE9ACBD000>, backgroundImage=<method-wrapper '__getattribute__' of attributeSetter object at 0x000001FE9ACBCFA0>, bitsMode=UNKNOWN, blendMode='avg', bpc=(8, 8, 8), color=array([0, 0, 0]), colorSpace='rgb', depthBits=8, fullscr=True, gamma=None, gammaErrorPolicy='raise', infoMsg=UNKNOWN, lms=UNKNOWN, monitor=<psychopy.monitors.calibTools.Monitor object at 0x000001FE9AD6AAA0>, multiSample=False, name='window1', numSamples=2, pos=[np.float64(0.0), np.float64(0.0)], screen=0, size=array([1920, 1200]), stencilBits=0, stereo=False, title='PsychoPy', units='height', useFBO=True, useRetina=False, viewOri=0.0, viewPos=None, viewScale=None, waitBlanking=True, winType='pyglet')
+25.4241 	EXP 	window1: backgroundImage = ''
+25.4242 	EXP 	window1: backgroundFit = 'none'
+25.8871 	EXP 	window1: Attempting to measure frame rate of screen (0) ...
+25.8871 	EXP 	window1: recordFrameIntervals = False
+26.0638 	EXP 	window1: recordFrameIntervals = True
+27.0363 	EXP 	window1: recordFrameIntervals = False
+27.0364 	EXP 	Screen (0) actual frame rate measured at 110.58Hz
+27.2598 	EXP 	untitled: status = STARTED
+27.4025 	EXP 	Created instructions_2 = TextStim(__class__=<class 'psychopy.visual.text.TextStim'>, alignHoriz=method-wrapper(...), alignText='center', alignVert=method-wrapper(...), anchorHoriz='center', anchorVert='center', antialias=True, autoDraw=False, autoLog=True, bold=False, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, font='Arial', fontFiles=[], height=np.float64(0.05), italic=False, languageStyle='LTR', name='instructions_2', opacity=1, ori=0, pos=array([0., 0.]), rgb=UNKNOWN, text=str(...), units='height', win=Window(...), wrapWidth=1)
+27.4081 	EXP 	Created fixation_1 = TextStim(__class__=<class 'psychopy.visual.text.TextStim'>, alignHoriz=method-wrapper(...), alignText='center', alignVert=method-wrapper(...), anchorHoriz='center', anchorVert='center', antialias=True, autoDraw=False, autoLog=True, bold=False, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, font='Arial', fontFiles=[], height=np.float64(0.05), italic=False, languageStyle='LTR', name='fixation_1', opacity=1, ori=0, pos=array([0., 0.]), rgb=UNKNOWN, text='+', units='height', win=Window(...), wrapWidth=1)
+27.4095 	WARNING 	Requested image 'grid' not found but similar filename 'grid.png' exists. This will be used instead but changing the filename is advised.
+27.4929 	EXP 	Created grid_lines_2 = ImageStim(__class__=<class 'psychopy.visual.image.ImageStim'>, anchor=('center', 'center'), autoLog=True, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=np.False_, flipVert=np.False_, image='grid', interpolate=True, mask=None, maskParams=None, name='grid_lines_2', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.6, 0.6]), texRes=128, units='height', win=Window(...))
+27.4994 	EXP 	Created target_square_2 = Rect(__class__=<class 'psychopy.visual.rect.Rect'>, anchor=('center', 'center'), autoDraw=False, autoLog=True, closeShape=True, color=method-wrapper(...), colorSpace='rgb', contrast=None, depth=-1.0, draggable=False, fillColor=array([1., 1., 1.]), fillColorSpace='rgb', fillRGB=array([1., 1., 1.]), interpolate=True, lineColor=array([0., 0., 0.]), lineColorSpace='rgb', lineRGB=array([0, 0, 0]), lineWidth=1, name='target_square_2', opacity=1, ori=0.0, pos=array([0., 0.]), size=array([0.15, 0.15]), units='height', vertices=ndarray(...), win=Window(...))
+27.5122 	EXP 	Created fixation_3 = TextStim(__class__=<class 'psychopy.visual.text.TextStim'>, alignHoriz=method-wrapper(...), alignText='center', alignVert=method-wrapper(...), anchorHoriz='center', anchorVert='center', antialias=True, autoDraw=False, autoLog=True, bold=False, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=-2.0, draggable=False, flipHoriz=False, flipVert=False, font='Arial', fontFiles=[], height=np.float64(0.05), italic=False, languageStyle='LTR', name='fixation_3', opacity=1, ori=0, pos=array([0., 0.]), rgb=UNKNOWN, text='+', units='height', win=Window(...), wrapWidth=1)
+27.6346 	EXP 	Created thank_you = TextStim(__class__=<class 'psychopy.visual.text.TextStim'>, alignHoriz=method-wrapper(...), alignText='center', alignVert=method-wrapper(...), anchorHoriz='center', anchorVert='center', antialias=True, autoDraw=False, autoLog=True, bold=False, color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, font='Arial', fontFiles=[], height=np.float64(0.1), italic=False, languageStyle='LTR', name='thank_you', opacity=1, ori=0, pos=array([0., 0.]), rgb=UNKNOWN, text=str(...), units='height', win=Window(...), wrapWidth=1)
+0.0178 	EXP 	instructions_2: autoDraw = True
+8.3093 	DATA 	Mouse: Left button down, pos=(1413,499)
+8.3097 	DATA 	Mouse:  Left button up, pos=(1413,499)
+9.3648 	EXP 	Device response: <KeyPress from None: t=9.345055900048465, value=space, duration=None>
+9.3675 	DATA 	Keypress: space
+9.3733 	EXP 	instructions_2: autoDraw = False
+9.3733 	EXP 	fixation_1: autoDraw = True
+9.4084 	EXP 	Device response: <KeyPress from None: t=9.345055900048465, value=space, duration=0.05900060012936592>
+10.3731 	EXP 	Imported trial_2.xlsx as conditions, 100 conditions, 2 params
+10.3752 	EXP 	New trial (rep=0, index=0): <Trial 0 (0 in rep 0) data={'location': [0, 0], 'corrAns': None, 'thisN': 0, 'thisTrialN': 0, 'thisRepN': 0}>
+10.3903 	EXP 	fixation_1: autoDraw = False
+10.3903 	EXP 	fixation_1: autoDraw = False
+10.3903 	EXP 	grid_lines_2: autoDraw = True
+10.3903 	EXP 	target_square_2: autoDraw = True
+11.3623 	EXP 	fixation_3: autoDraw = True
+11.3813 	EXP 	target_square_2: autoDraw = False
+12.3567 	EXP 	fixation_3: autoDraw = False
+12.3740 	EXP 	New trial (rep=0, index=1): <Trial 1 (1 in rep 0) data={'location': [0.2, 0], 'corrAns': None, 'thisN': 1, 'thisTrialN': 1, 'thisRepN': 0}>
+12.3835 	EXP 	grid_lines_2: autoDraw = False
+12.3835 	EXP 	target_square_2: autoDraw = False
+12.3835 	EXP 	fixation_3: autoDraw = False
+12.3835 	EXP 	grid_lines_2: autoDraw = True
+12.3835 	EXP 	target_square_2: autoDraw = True
+13.3569 	EXP 	fixation_3: autoDraw = True
+13.3738 	EXP 	target_square_2: autoDraw = False
+14.3513 	EXP 	fixation_3: autoDraw = False
+14.3689 	EXP 	New trial (rep=0, index=2): <Trial 2 (2 in rep 0) data={'location': [-0.2, 0.2], 'corrAns': None, 'thisN': 2, 'thisTrialN': 2, 'thisRepN': 0}>
+14.3793 	EXP 	grid_lines_2: autoDraw = False
+14.3793 	EXP 	target_square_2: autoDraw = False
+14.3793 	EXP 	fixation_3: autoDraw = False
+14.3793 	EXP 	grid_lines_2: autoDraw = True
+14.3793 	EXP 	target_square_2: autoDraw = True
+15.3620 	EXP 	fixation_3: autoDraw = True
+15.3697 	EXP 	target_square_2: autoDraw = False
+16.3562 	EXP 	fixation_3: autoDraw = False
+16.3652 	EXP 	New trial (rep=0, index=3): <Trial 3 (3 in rep 0) data={'location': [-0.2, 0], 'corrAns': None, 'thisN': 3, 'thisTrialN': 3, 'thisRepN': 0}>
+16.3732 	EXP 	grid_lines_2: autoDraw = False
+16.3732 	EXP 	grid_lines_2: autoDraw = False
+16.3732 	EXP 	target_square_2: autoDraw = False
+16.3732 	EXP 	fixation_3: autoDraw = False
+16.3732 	EXP 	grid_lines_2: autoDraw = True
+16.3732 	EXP 	target_square_2: autoDraw = True
+17.3644 	EXP 	target_square_2: autoDraw = False
+17.3644 	EXP 	fixation_3: autoDraw = True
+18.3571 	EXP 	fixation_3: autoDraw = False
+18.3581 	EXP 	New trial (rep=0, index=4): <Trial 4 (4 in rep 0) data={'location': [-0.2, 0.2], 'corrAns': 'space', 'thisN': 4, 'thisTrialN': 4, 'thisRepN': 0}>
+18.3661 	EXP 	grid_lines_2: autoDraw = False
+18.3661 	EXP 	grid_lines_2: autoDraw = False
+18.3661 	EXP 	target_square_2: autoDraw = False
+18.3661 	EXP 	fixation_3: autoDraw = False
+18.3661 	EXP 	grid_lines_2: autoDraw = True
+18.3661 	EXP 	target_square_2: autoDraw = True
+19.3633 	EXP 	target_square_2: autoDraw = False
+19.3633 	EXP 	fixation_3: autoDraw = True
+20.3525 	EXP 	New trial (rep=0, index=5): <Trial 5 (5 in rep 0) data={'location': [0.2, -0.2], 'corrAns': None, 'thisN': 5, 'thisTrialN': 5, 'thisRepN': 0}>
+20.3656 	EXP 	grid_lines_2: autoDraw = False
+20.3656 	EXP 	fixation_3: autoDraw = False
+20.3656 	EXP 	grid_lines_2: autoDraw = False
+20.3656 	EXP 	target_square_2: autoDraw = False
+20.3656 	EXP 	fixation_3: autoDraw = False
+20.3656 	EXP 	grid_lines_2: autoDraw = True
+20.3656 	EXP 	target_square_2: autoDraw = True
+21.3603 	EXP 	target_square_2: autoDraw = False
+21.3603 	EXP 	fixation_3: autoDraw = True
+22.3519 	EXP 	fixation_3: autoDraw = False
+22.3530 	EXP 	New trial (rep=0, index=6): <Trial 6 (6 in rep 0) data={'location': [0, -0.2], 'corrAns': None, 'thisN': 6, 'thisTrialN': 6, 'thisRepN': 0}>
+22.3613 	EXP 	grid_lines_2: autoDraw = False
+22.3613 	EXP 	grid_lines_2: autoDraw = False
+22.3613 	EXP 	target_square_2: autoDraw = False
+22.3613 	EXP 	fixation_3: autoDraw = False
+22.3613 	EXP 	grid_lines_2: autoDraw = True
+22.3613 	EXP 	target_square_2: autoDraw = True
+23.3591 	EXP 	target_square_2: autoDraw = False
+23.3591 	EXP 	fixation_3: autoDraw = True
+24.3447 	EXP 	New trial (rep=0, index=7): <Trial 7 (7 in rep 0) data={'location': [0.2, 0.2], 'corrAns': None, 'thisN': 7, 'thisTrialN': 7, 'thisRepN': 0}>
+24.3518 	EXP 	grid_lines_2: autoDraw = False
+24.3518 	EXP 	fixation_3: autoDraw = False
+24.3518 	EXP 	grid_lines_2: autoDraw = False
+24.3518 	EXP 	target_square_2: autoDraw = False
+24.3518 	EXP 	fixation_3: autoDraw = False
+24.3604 	EXP 	grid_lines_2: autoDraw = True
+24.3604 	EXP 	target_square_2: autoDraw = True
+25.3531 	EXP 	target_square_2: autoDraw = False
+25.3599 	EXP 	fixation_3: autoDraw = True
+26.3450 	EXP 	New trial (rep=0, index=8): <Trial 8 (8 in rep 0) data={'location': [0, -0.2], 'corrAns': 'space', 'thisN': 8, 'thisTrialN': 8, 'thisRepN': 0}>
+26.3522 	EXP 	grid_lines_2: autoDraw = False
+26.3522 	EXP 	fixation_3: autoDraw = False
+26.3522 	EXP 	grid_lines_2: autoDraw = False
+26.3522 	EXP 	target_square_2: autoDraw = False
+26.3522 	EXP 	fixation_3: autoDraw = False
+26.3613 	EXP 	grid_lines_2: autoDraw = True
+26.3613 	EXP 	target_square_2: autoDraw = True
+27.3554 	EXP 	target_square_2: autoDraw = False
+27.3635 	EXP 	fixation_3: autoDraw = True
+28.3485 	EXP 	New trial (rep=0, index=9): <Trial 9 (9 in rep 0) data={'location': [0.2, 0.2], 'corrAns': 'space', 'thisN': 9, 'thisTrialN': 9, 'thisRepN': 0}>
+28.3553 	EXP 	grid_lines_2: autoDraw = False
+28.3553 	EXP 	fixation_3: autoDraw = False
+28.3553 	EXP 	grid_lines_2: autoDraw = False
+28.3553 	EXP 	target_square_2: autoDraw = False
+28.3553 	EXP 	fixation_3: autoDraw = False
+28.3639 	EXP 	grid_lines_2: autoDraw = True
+28.3639 	EXP 	target_square_2: autoDraw = True
+29.3586 	EXP 	target_square_2: autoDraw = False
+29.3586 	EXP 	fixation_3: autoDraw = True
+30.3507 	EXP 	fixation_3: autoDraw = False
+30.3517 	EXP 	New trial (rep=0, index=10): <Trial 10 (10 in rep 0) data={'location': [0.2, 0], 'corrAns': None, 'thisN': 10, 'thisTrialN': 10, 'thisRepN': 0}>
+30.3589 	EXP 	grid_lines_2: autoDraw = False
+30.3589 	EXP 	grid_lines_2: autoDraw = False
+30.3589 	EXP 	target_square_2: autoDraw = False
+30.3589 	EXP 	fixation_3: autoDraw = False
+30.3589 	EXP 	grid_lines_2: autoDraw = True
+30.3589 	EXP 	target_square_2: autoDraw = True
+31.3568 	EXP 	target_square_2: autoDraw = False
+31.3568 	EXP 	fixation_3: autoDraw = True
+32.3483 	EXP 	fixation_3: autoDraw = False
+32.3492 	EXP 	New trial (rep=0, index=11): <Trial 11 (11 in rep 0) data={'location': [0, 0], 'corrAns': None, 'thisN': 11, 'thisTrialN': 11, 'thisRepN': 0}>
+32.3577 	EXP 	grid_lines_2: autoDraw = False
+32.3577 	EXP 	grid_lines_2: autoDraw = False
+32.3577 	EXP 	target_square_2: autoDraw = False
+32.3577 	EXP 	fixation_3: autoDraw = False
+32.3577 	EXP 	grid_lines_2: autoDraw = True
+32.3577 	EXP 	target_square_2: autoDraw = True
+33.3541 	EXP 	target_square_2: autoDraw = False
+33.3640 	EXP 	fixation_3: autoDraw = True
+34.3493 	EXP 	grid_lines_2: autoDraw = False
+34.3504 	EXP 	New trial (rep=0, index=12): <Trial 12 (12 in rep 0) data={'location': [0.2, -0.2], 'corrAns': None, 'thisN': 12, 'thisTrialN': 12, 'thisRepN': 0}>
+34.3596 	EXP 	fixation_3: autoDraw = False
+34.3596 	EXP 	grid_lines_2: autoDraw = False
+34.3596 	EXP 	target_square_2: autoDraw = False
+34.3596 	EXP 	fixation_3: autoDraw = False
+34.3596 	EXP 	grid_lines_2: autoDraw = True
+34.3596 	EXP 	target_square_2: autoDraw = True
+35.3554 	EXP 	target_square_2: autoDraw = False
+35.3631 	EXP 	fixation_3: autoDraw = True
+36.3513 	EXP 	New trial (rep=0, index=13): <Trial 13 (13 in rep 0) data={'location': [-0.2, -0.2], 'corrAns': None, 'thisN': 13, 'thisTrialN': 13, 'thisRepN': 0}>
+36.3604 	EXP 	grid_lines_2: autoDraw = False
+36.3604 	EXP 	fixation_3: autoDraw = False
+36.3604 	EXP 	grid_lines_2: autoDraw = False
+36.3604 	EXP 	target_square_2: autoDraw = False
+36.3604 	EXP 	fixation_3: autoDraw = False
+36.3604 	EXP 	grid_lines_2: autoDraw = True
+36.3604 	EXP 	target_square_2: autoDraw = True
+37.3534 	EXP 	target_square_2: autoDraw = False
+37.3621 	EXP 	fixation_3: autoDraw = True
+38.3485 	EXP 	New trial (rep=0, index=14): <Trial 14 (14 in rep 0) data={'location': [0.2, -0.2], 'corrAns': 'space', 'thisN': 14, 'thisTrialN': 14, 'thisRepN': 0}>
+38.3559 	EXP 	grid_lines_2: autoDraw = False
+38.3559 	EXP 	fixation_3: autoDraw = False
+38.3559 	EXP 	grid_lines_2: autoDraw = False
+38.3559 	EXP 	target_square_2: autoDraw = False
+38.3559 	EXP 	fixation_3: autoDraw = False
+38.3652 	EXP 	grid_lines_2: autoDraw = True
+38.3652 	EXP 	target_square_2: autoDraw = True
+39.3600 	EXP 	target_square_2: autoDraw = False
+39.3600 	EXP 	fixation_3: autoDraw = True
+40.3502 	EXP 	fixation_3: autoDraw = False
+40.3526 	EXP 	New trial (rep=0, index=15): <Trial 15 (15 in rep 0) data={'location': [0, 0.2], 'corrAns': None, 'thisN': 15, 'thisTrialN': 15, 'thisRepN': 0}>
+40.3624 	EXP 	grid_lines_2: autoDraw = False
+40.3624 	EXP 	grid_lines_2: autoDraw = False
+40.3624 	EXP 	target_square_2: autoDraw = False
+40.3624 	EXP 	fixation_3: autoDraw = False
+40.3624 	EXP 	grid_lines_2: autoDraw = True
+40.3624 	EXP 	target_square_2: autoDraw = True
+41.3603 	EXP 	target_square_2: autoDraw = False
+41.3603 	EXP 	fixation_3: autoDraw = True
+42.3501 	EXP 	fixation_3: autoDraw = False
+42.3519 	EXP 	New trial (rep=0, index=16): <Trial 16 (16 in rep 0) data={'location': [0.2, 0.2], 'corrAns': None, 'thisN': 16, 'thisTrialN': 16, 'thisRepN': 0}>
+42.3600 	EXP 	grid_lines_2: autoDraw = False
+42.3600 	EXP 	grid_lines_2: autoDraw = False
+42.3600 	EXP 	target_square_2: autoDraw = False
+42.3600 	EXP 	fixation_3: autoDraw = False
+42.3600 	EXP 	grid_lines_2: autoDraw = True
+42.3600 	EXP 	target_square_2: autoDraw = True
+43.3531 	EXP 	target_square_2: autoDraw = False
+43.3617 	EXP 	fixation_3: autoDraw = True
+44.3502 	EXP 	New trial (rep=0, index=17): <Trial 17 (17 in rep 0) data={'location': [0, 0], 'corrAns': None, 'thisN': 17, 'thisTrialN': 17, 'thisRepN': 0}>
+44.3594 	EXP 	grid_lines_2: autoDraw = False
+44.3594 	EXP 	fixation_3: autoDraw = False
+44.3594 	EXP 	grid_lines_2: autoDraw = False
+44.3594 	EXP 	target_square_2: autoDraw = False
+44.3594 	EXP 	fixation_3: autoDraw = False
+44.3594 	EXP 	grid_lines_2: autoDraw = True
+44.3594 	EXP 	target_square_2: autoDraw = True
+45.3546 	EXP 	target_square_2: autoDraw = False
+45.3655 	EXP 	fixation_3: autoDraw = True
+46.3549 	EXP 	grid_lines_2: autoDraw = False
+46.3559 	EXP 	New trial (rep=0, index=18): <Trial 18 (18 in rep 0) data={'location': [0, -0.2], 'corrAns': None, 'thisN': 18, 'thisTrialN': 18, 'thisRepN': 0}>
+46.3645 	EXP 	fixation_3: autoDraw = False
+46.3645 	EXP 	grid_lines_2: autoDraw = False
+46.3645 	EXP 	target_square_2: autoDraw = False
+46.3645 	EXP 	fixation_3: autoDraw = False
+46.3645 	EXP 	grid_lines_2: autoDraw = True
+46.3645 	EXP 	target_square_2: autoDraw = True
+47.3572 	EXP 	target_square_2: autoDraw = False
+47.3572 	EXP 	fixation_3: autoDraw = True
+48.3513 	EXP 	New trial (rep=0, index=19): <Trial 19 (19 in rep 0) data={'location': [0.2, 0], 'corrAns': None, 'thisN': 19, 'thisTrialN': 19, 'thisRepN': 0}>
+48.3590 	EXP 	grid_lines_2: autoDraw = False
+48.3590 	EXP 	fixation_3: autoDraw = False
+48.3590 	EXP 	grid_lines_2: autoDraw = False
+48.3590 	EXP 	target_square_2: autoDraw = False
+48.3590 	EXP 	fixation_3: autoDraw = False
+48.3590 	EXP 	grid_lines_2: autoDraw = True
+48.3590 	EXP 	target_square_2: autoDraw = True
+49.3559 	EXP 	target_square_2: autoDraw = False
+49.3559 	EXP 	fixation_3: autoDraw = True
+50.3462 	EXP 	New trial (rep=0, index=20): <Trial 20 (20 in rep 0) data={'location': [0, -0.2], 'corrAns': 'space', 'thisN': 20, 'thisTrialN': 20, 'thisRepN': 0}>
+50.3532 	EXP 	grid_lines_2: autoDraw = False
+50.3532 	EXP 	fixation_3: autoDraw = False
+50.3532 	EXP 	grid_lines_2: autoDraw = False
+50.3532 	EXP 	target_square_2: autoDraw = False
+50.3532 	EXP 	fixation_3: autoDraw = False
+50.3616 	EXP 	grid_lines_2: autoDraw = True
+50.3616 	EXP 	target_square_2: autoDraw = True
+51.3596 	EXP 	target_square_2: autoDraw = False
+51.3596 	EXP 	fixation_3: autoDraw = True
+52.3536 	EXP 	fixation_3: autoDraw = False
+52.3551 	EXP 	New trial (rep=0, index=21): <Trial 21 (21 in rep 0) data={'location': [-0.2, 0.2], 'corrAns': None, 'thisN': 21, 'thisTrialN': 21, 'thisRepN': 0}>
+52.3637 	EXP 	grid_lines_2: autoDraw = False
+52.3637 	EXP 	grid_lines_2: autoDraw = False
+52.3637 	EXP 	target_square_2: autoDraw = False
+52.3637 	EXP 	fixation_3: autoDraw = False
+52.3637 	EXP 	grid_lines_2: autoDraw = True
+52.3637 	EXP 	target_square_2: autoDraw = True
+53.3616 	EXP 	target_square_2: autoDraw = False
+53.3616 	EXP 	fixation_3: autoDraw = True
+54.3487 	EXP 	New trial (rep=0, index=22): <Trial 22 (22 in rep 0) data={'location': [0.2, -0.2], 'corrAns': None, 'thisN': 22, 'thisTrialN': 22, 'thisRepN': 0}>
+54.3563 	EXP 	grid_lines_2: autoDraw = False
+54.3563 	EXP 	fixation_3: autoDraw = False
+54.3563 	EXP 	grid_lines_2: autoDraw = False
+54.3563 	EXP 	target_square_2: autoDraw = False
+54.3563 	EXP 	fixation_3: autoDraw = False
+54.3657 	EXP 	grid_lines_2: autoDraw = True
+54.3657 	EXP 	target_square_2: autoDraw = True
+55.3628 	EXP 	target_square_2: autoDraw = False
+55.3628 	EXP 	fixation_3: autoDraw = True
+56.3549 	EXP 	New trial (rep=0, index=23): <Trial 23 (23 in rep 0) data={'location': [-0.2, 0.2], 'corrAns': 'space', 'thisN': 23, 'thisTrialN': 23, 'thisRepN': 0}>
+56.3646 	EXP 	grid_lines_2: autoDraw = False
+56.3646 	EXP 	fixation_3: autoDraw = False
+56.3646 	EXP 	grid_lines_2: autoDraw = False
+56.3646 	EXP 	target_square_2: autoDraw = False
+56.3646 	EXP 	fixation_3: autoDraw = False
+56.3646 	EXP 	grid_lines_2: autoDraw = True
+56.3646 	EXP 	target_square_2: autoDraw = True
+57.3555 	EXP 	target_square_2: autoDraw = False
+57.3555 	EXP 	fixation_3: autoDraw = True
+58.3523 	EXP 	fixation_3: autoDraw = False
+58.3547 	EXP 	New trial (rep=0, index=24): <Trial 24 (24 in rep 0) data={'location': [0, 0], 'corrAns': None, 'thisN': 24, 'thisTrialN': 24, 'thisRepN': 0}>
+58.3645 	EXP 	grid_lines_2: autoDraw = False
+58.3645 	EXP 	grid_lines_2: autoDraw = False
+58.3645 	EXP 	target_square_2: autoDraw = False
+58.3645 	EXP 	fixation_3: autoDraw = False
+58.3645 	EXP 	grid_lines_2: autoDraw = True
+58.3645 	EXP 	target_square_2: autoDraw = True
+59.3618 	EXP 	target_square_2: autoDraw = False
+59.3618 	EXP 	fixation_3: autoDraw = True
+60.3521 	EXP 	New trial (rep=0, index=25): <Trial 25 (25 in rep 0) data={'location': [0.2, 0.2], 'corrAns': None, 'thisN': 25, 'thisTrialN': 25, 'thisRepN': 0}>
+60.3611 	EXP 	grid_lines_2: autoDraw = False
+60.3611 	EXP 	fixation_3: autoDraw = False
+60.3611 	EXP 	grid_lines_2: autoDraw = False
+60.3611 	EXP 	target_square_2: autoDraw = False
+60.3611 	EXP 	fixation_3: autoDraw = False
+60.3611 	EXP 	grid_lines_2: autoDraw = True
+60.3611 	EXP 	target_square_2: autoDraw = True
+61.3615 	EXP 	target_square_2: autoDraw = False
+61.3615 	EXP 	fixation_3: autoDraw = True
+62.3469 	EXP 	New trial (rep=0, index=26): <Trial 26 (26 in rep 0) data={'location': [-0.2, -0.2], 'corrAns': None, 'thisN': 26, 'thisTrialN': 26, 'thisRepN': 0}>
+62.3523 	EXP 	grid_lines_2: autoDraw = False
+62.3523 	EXP 	fixation_3: autoDraw = False
+62.3523 	EXP 	grid_lines_2: autoDraw = False
+62.3523 	EXP 	target_square_2: autoDraw = False
+62.3523 	EXP 	fixation_3: autoDraw = False
+62.3627 	EXP 	grid_lines_2: autoDraw = True
+62.3627 	EXP 	target_square_2: autoDraw = True
+63.3528 	EXP 	target_square_2: autoDraw = False
+63.3628 	EXP 	fixation_3: autoDraw = True
+64.3515 	EXP 	New trial (rep=0, index=27): <Trial 27 (27 in rep 0) data={'location': [0.2, 0], 'corrAns': None, 'thisN': 27, 'thisTrialN': 27, 'thisRepN': 0}>
+64.3612 	EXP 	grid_lines_2: autoDraw = False
+64.3612 	EXP 	fixation_3: autoDraw = False
+64.3612 	EXP 	grid_lines_2: autoDraw = False
+64.3612 	EXP 	target_square_2: autoDraw = False
+64.3612 	EXP 	fixation_3: autoDraw = False
+64.3612 	EXP 	grid_lines_2: autoDraw = True
+64.3612 	EXP 	target_square_2: autoDraw = True
+65.3567 	EXP 	target_square_2: autoDraw = False
+65.3567 	EXP 	fixation_3: autoDraw = True
+66.3496 	EXP 	fixation_3: autoDraw = False
+66.3523 	EXP 	New trial (rep=0, index=28): <Trial 28 (28 in rep 0) data={'location': [0, 0.2], 'corrAns': None, 'thisN': 28, 'thisTrialN': 28, 'thisRepN': 0}>
+66.3613 	EXP 	grid_lines_2: autoDraw = False
+66.3613 	EXP 	grid_lines_2: autoDraw = False
+66.3613 	EXP 	target_square_2: autoDraw = False
+66.3613 	EXP 	fixation_3: autoDraw = False
+66.3613 	EXP 	grid_lines_2: autoDraw = True
+66.3613 	EXP 	target_square_2: autoDraw = True
+67.3551 	EXP 	target_square_2: autoDraw = False
+67.3642 	EXP 	fixation_3: autoDraw = True
+68.3529 	EXP 	grid_lines_2: autoDraw = False
+68.3537 	EXP 	New trial (rep=0, index=29): <Trial 29 (29 in rep 0) data={'location': [0.2, 0], 'corrAns': 'space', 'thisN': 29, 'thisTrialN': 29, 'thisRepN': 0}>
+68.3611 	EXP 	fixation_3: autoDraw = False
+68.3611 	EXP 	grid_lines_2: autoDraw = False
+68.3611 	EXP 	target_square_2: autoDraw = False
+68.3611 	EXP 	fixation_3: autoDraw = False
+68.3611 	EXP 	grid_lines_2: autoDraw = True
+68.3611 	EXP 	target_square_2: autoDraw = True
+69.3553 	EXP 	target_square_2: autoDraw = False
+69.3681 	EXP 	fixation_3: autoDraw = True
+70.3575 	EXP 	grid_lines_2: autoDraw = False
+70.3585 	EXP 	New trial (rep=0, index=30): <Trial 30 (30 in rep 0) data={'location': [-0.2, -0.2], 'corrAns': None, 'thisN': 30, 'thisTrialN': 30, 'thisRepN': 0}>
+70.3675 	EXP 	fixation_3: autoDraw = False
+70.3675 	EXP 	grid_lines_2: autoDraw = False
+70.3675 	EXP 	target_square_2: autoDraw = False
+70.3675 	EXP 	fixation_3: autoDraw = False
+70.3675 	EXP 	grid_lines_2: autoDraw = True
+70.3675 	EXP 	target_square_2: autoDraw = True
+71.3564 	EXP 	fixation_3: autoDraw = True
+71.3651 	EXP 	target_square_2: autoDraw = False
+72.3458 	EXP 	fixation_3: autoDraw = False
+72.3549 	EXP 	New trial (rep=0, index=31): <Trial 31 (31 in rep 0) data={'location': [0, -0.2], 'corrAns': None, 'thisN': 31, 'thisTrialN': 31, 'thisRepN': 0}>
+72.3633 	EXP 	grid_lines_2: autoDraw = False
+72.3633 	EXP 	grid_lines_2: autoDraw = False
+72.3633 	EXP 	target_square_2: autoDraw = False
+72.3633 	EXP 	fixation_3: autoDraw = False
+72.3633 	EXP 	grid_lines_2: autoDraw = True
+72.3633 	EXP 	target_square_2: autoDraw = True
+73.3589 	EXP 	target_square_2: autoDraw = False
+73.3589 	EXP 	fixation_3: autoDraw = True
+74.3502 	EXP 	fixation_3: autoDraw = False
+74.3512 	EXP 	New trial (rep=0, index=32): <Trial 32 (32 in rep 0) data={'location': [0, 0.2], 'corrAns': None, 'thisN': 32, 'thisTrialN': 32, 'thisRepN': 0}>
+74.3610 	EXP 	grid_lines_2: autoDraw = False
+74.3610 	EXP 	grid_lines_2: autoDraw = False
+74.3610 	EXP 	target_square_2: autoDraw = False
+74.3610 	EXP 	fixation_3: autoDraw = False
+74.3610 	EXP 	grid_lines_2: autoDraw = True
+74.3610 	EXP 	target_square_2: autoDraw = True
+75.3584 	EXP 	target_square_2: autoDraw = False
+75.3584 	EXP 	fixation_3: autoDraw = True
+76.3509 	EXP 	fixation_3: autoDraw = False
+76.3518 	EXP 	New trial (rep=0, index=33): <Trial 33 (33 in rep 0) data={'location': [0.2, 0.2], 'corrAns': None, 'thisN': 33, 'thisTrialN': 33, 'thisRepN': 0}>
+76.3598 	EXP 	grid_lines_2: autoDraw = False
+76.3598 	EXP 	grid_lines_2: autoDraw = False
+76.3598 	EXP 	target_square_2: autoDraw = False
+76.3598 	EXP 	fixation_3: autoDraw = False
+76.3598 	EXP 	grid_lines_2: autoDraw = True
+76.3598 	EXP 	target_square_2: autoDraw = True
+77.3553 	EXP 	target_square_2: autoDraw = False
+77.3641 	EXP 	fixation_3: autoDraw = True
+78.3496 	EXP 	New trial (rep=0, index=34): <Trial 34 (34 in rep 0) data={'location': [0, 0], 'corrAns': None, 'thisN': 34, 'thisTrialN': 34, 'thisRepN': 0}>
+78.3588 	EXP 	grid_lines_2: autoDraw = False
+78.3588 	EXP 	fixation_3: autoDraw = False
+78.3588 	EXP 	grid_lines_2: autoDraw = False
+78.3588 	EXP 	target_square_2: autoDraw = False
+78.3588 	EXP 	fixation_3: autoDraw = False
+78.3588 	EXP 	grid_lines_2: autoDraw = True
+78.3588 	EXP 	target_square_2: autoDraw = True
+79.3534 	EXP 	target_square_2: autoDraw = False
+79.3616 	EXP 	fixation_3: autoDraw = True
+80.3517 	EXP 	grid_lines_2: autoDraw = False
+80.3529 	EXP 	New trial (rep=0, index=35): <Trial 35 (35 in rep 0) data={'location': [0.2, -0.2], 'corrAns': None, 'thisN': 35, 'thisTrialN': 35, 'thisRepN': 0}>
+80.3631 	EXP 	fixation_3: autoDraw = False
+80.3631 	EXP 	grid_lines_2: autoDraw = False
+80.3631 	EXP 	target_square_2: autoDraw = False
+80.3631 	EXP 	fixation_3: autoDraw = False
+80.3631 	EXP 	grid_lines_2: autoDraw = True
+80.3631 	EXP 	target_square_2: autoDraw = True
+81.3528 	EXP 	target_square_2: autoDraw = False
+81.3629 	EXP 	fixation_3: autoDraw = True
+82.3530 	EXP 	New trial (rep=0, index=36): <Trial 36 (36 in rep 0) data={'location': [0.2, -0.2], 'corrAns': None, 'thisN': 36, 'thisTrialN': 36, 'thisRepN': 0}>
+82.3616 	EXP 	grid_lines_2: autoDraw = False
+82.3616 	EXP 	fixation_3: autoDraw = False
+82.3616 	EXP 	grid_lines_2: autoDraw = False
+82.3616 	EXP 	target_square_2: autoDraw = False
+82.3616 	EXP 	fixation_3: autoDraw = False
+82.3616 	EXP 	grid_lines_2: autoDraw = True
+82.3616 	EXP 	target_square_2: autoDraw = True
+83.3560 	EXP 	target_square_2: autoDraw = False
+83.3668 	EXP 	fixation_3: autoDraw = True
+84.3532 	EXP 	New trial (rep=0, index=37): <Trial 37 (37 in rep 0) data={'location': [0, 0.2], 'corrAns': None, 'thisN': 37, 'thisTrialN': 37, 'thisRepN': 0}>
+84.3616 	EXP 	grid_lines_2: autoDraw = False
+84.3616 	EXP 	fixation_3: autoDraw = False
+84.3616 	EXP 	grid_lines_2: autoDraw = False
+84.3616 	EXP 	target_square_2: autoDraw = False
+84.3616 	EXP 	fixation_3: autoDraw = False
+84.3616 	EXP 	grid_lines_2: autoDraw = True
+84.3616 	EXP 	target_square_2: autoDraw = True
+85.3568 	EXP 	target_square_2: autoDraw = False
+85.3642 	EXP 	fixation_3: autoDraw = True
+86.3560 	EXP 	New trial (rep=0, index=38): <Trial 38 (38 in rep 0) data={'location': [0.2, -0.2], 'corrAns': 'space', 'thisN': 38, 'thisTrialN': 38, 'thisRepN': 0}>
+86.3660 	EXP 	grid_lines_2: autoDraw = False
+86.3660 	EXP 	fixation_3: autoDraw = False
+86.3660 	EXP 	grid_lines_2: autoDraw = False
+86.3660 	EXP 	target_square_2: autoDraw = False
+86.3660 	EXP 	fixation_3: autoDraw = False
+86.3660 	EXP 	grid_lines_2: autoDraw = True
+86.3660 	EXP 	target_square_2: autoDraw = True
+87.3611 	EXP 	target_square_2: autoDraw = False
+87.3611 	EXP 	fixation_3: autoDraw = True
+88.3509 	EXP 	New trial (rep=0, index=39): <Trial 39 (39 in rep 0) data={'location': [-0.2, 0.2], 'corrAns': None, 'thisN': 39, 'thisTrialN': 39, 'thisRepN': 0}>
+88.3593 	EXP 	grid_lines_2: autoDraw = False
+88.3593 	EXP 	fixation_3: autoDraw = False
+88.3593 	EXP 	grid_lines_2: autoDraw = False
+88.3593 	EXP 	target_square_2: autoDraw = False
+88.3593 	EXP 	fixation_3: autoDraw = False
+88.3593 	EXP 	grid_lines_2: autoDraw = True
+88.3593 	EXP 	target_square_2: autoDraw = True
+89.3591 	EXP 	target_square_2: autoDraw = False
+89.3591 	EXP 	fixation_3: autoDraw = True
+90.3446 	EXP 	New trial (rep=0, index=40): <Trial 40 (40 in rep 0) data={'location': [0, -0.2], 'corrAns': None, 'thisN': 40, 'thisTrialN': 40, 'thisRepN': 0}>
+90.3519 	EXP 	grid_lines_2: autoDraw = False
+90.3519 	EXP 	fixation_3: autoDraw = False
+90.3519 	EXP 	grid_lines_2: autoDraw = False
+90.3519 	EXP 	target_square_2: autoDraw = False
+90.3519 	EXP 	fixation_3: autoDraw = False
+90.3610 	EXP 	grid_lines_2: autoDraw = True
+90.3610 	EXP 	target_square_2: autoDraw = True
+91.3595 	EXP 	target_square_2: autoDraw = False
+91.3595 	EXP 	fixation_3: autoDraw = True
+92.3484 	EXP 	New trial (rep=0, index=41): <Trial 41 (41 in rep 0) data={'location': [-0.2, 0.2], 'corrAns': 'space', 'thisN': 41, 'thisTrialN': 41, 'thisRepN': 0}>
+92.3571 	EXP 	grid_lines_2: autoDraw = False
+92.3571 	EXP 	fixation_3: autoDraw = False
+92.3571 	EXP 	grid_lines_2: autoDraw = False
+92.3571 	EXP 	target_square_2: autoDraw = False
+92.3571 	EXP 	fixation_3: autoDraw = False
+92.3571 	EXP 	grid_lines_2: autoDraw = True
+92.3571 	EXP 	target_square_2: autoDraw = True
+93.3569 	EXP 	target_square_2: autoDraw = False
+93.3673 	EXP 	fixation_3: autoDraw = True
+94.3544 	EXP 	grid_lines_2: autoDraw = False
+94.3554 	EXP 	New trial (rep=0, index=42): <Trial 42 (42 in rep 0) data={'location': [0.2, 0], 'corrAns': None, 'thisN': 42, 'thisTrialN': 42, 'thisRepN': 0}>
+94.3643 	EXP 	fixation_3: autoDraw = False
+94.3643 	EXP 	grid_lines_2: autoDraw = False
+94.3643 	EXP 	target_square_2: autoDraw = False
+94.3643 	EXP 	fixation_3: autoDraw = False
+94.3643 	EXP 	grid_lines_2: autoDraw = True
+94.3643 	EXP 	target_square_2: autoDraw = True
+95.3585 	EXP 	target_square_2: autoDraw = False
+95.3585 	EXP 	fixation_3: autoDraw = True
+96.3539 	EXP 	fixation_3: autoDraw = False
+96.3548 	EXP 	New trial (rep=0, index=43): <Trial 43 (43 in rep 0) data={'location': [0, 0], 'corrAns': None, 'thisN': 43, 'thisTrialN': 43, 'thisRepN': 0}>
+96.3639 	EXP 	grid_lines_2: autoDraw = False
+96.3639 	EXP 	grid_lines_2: autoDraw = False
+96.3639 	EXP 	target_square_2: autoDraw = False
+96.3639 	EXP 	fixation_3: autoDraw = False
+96.3639 	EXP 	grid_lines_2: autoDraw = True
+96.3639 	EXP 	target_square_2: autoDraw = True
+97.3624 	EXP 	target_square_2: autoDraw = False
+97.3624 	EXP 	fixation_3: autoDraw = True
+98.3490 	EXP 	New trial (rep=0, index=44): <Trial 44 (44 in rep 0) data={'location': [0.2, 0], 'corrAns': 'space', 'thisN': 44, 'thisTrialN': 44, 'thisRepN': 0}>
+98.3585 	EXP 	grid_lines_2: autoDraw = False
+98.3585 	EXP 	fixation_3: autoDraw = False
+98.3585 	EXP 	grid_lines_2: autoDraw = False
+98.3585 	EXP 	target_square_2: autoDraw = False
+98.3585 	EXP 	fixation_3: autoDraw = False
+98.3585 	EXP 	grid_lines_2: autoDraw = True
+98.3585 	EXP 	target_square_2: autoDraw = True
+99.0011 	DATA 	Mouse: Left button down, pos=(1639,500)
+99.0053 	DATA 	Mouse:  Left button up, pos=(1639,500)
+99.3166 	EXP 	Device response: <KeyPress from None: t=99.31434649997391, value=escape, duration=None>
+99.3177 	DATA 	Keypress: escape
+99.3493 	EXP 	target_square_2: autoDraw = False
+99.3584 	EXP 	fixation_3: autoDraw = True
+99.4091 	EXP 	Device response: <KeyPress from None: t=99.31434649997391, value=escape, duration=0.0912808000575751>
+99.4092 	EXP 	untitled: status = STOPPED
+99.4160 	EXP 	grid_lines_2: autoDraw = False
+99.4160 	EXP 	fixation_3: autoDraw = False
+99.4162 	EXP 	untitled: status = STOPPED

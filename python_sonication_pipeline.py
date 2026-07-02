@@ -8,17 +8,20 @@ import threading
 import time
 import csv
 from pathlib import Path
+import keyboard
 
 if os.name == 'nt':
     import msvcrt
 else:
     import select
 
+from crc import Configuration
 import numpy as np
 from pylsl import StreamInlet, local_clock, resolve_byprop, StreamInfo, StreamOutlet
 from hash_func import hash_and_test
 
 import gpype as gp 
+from gpype.backend.core.o_node import ONode
 
 from openlifu.bf.pulse import Pulse
 from openlifu.bf.sequence import Sequence
@@ -83,8 +86,7 @@ def record_lifu_numeric():
 
 def record_eeg_lsl():
     """
-    Record EEG data from LSL to CSV for offline processing.
-    This is separate from the g.Pype pipeline's own CSV writing.
+    Record EEG data from LSL using chunks to prevent sample dropping.
     """
     print("Waiting for EEG LSL stream...")
     streams = resolve_byprop('type', 'EEG', timeout=30)
@@ -100,18 +102,27 @@ def record_eeg_lsl():
         header_written = False
 
         while RUNNING:
-            sample, ts = inlet.pull_sample(timeout=1.0)
-            if sample is None:
+            # 1. Pull multiple samples at once (a chunk) instead of a single sample
+            # This fetches everything that accumulated while Python was busy
+            samples, timestamps = inlet.pull_chunk(timeout=1.0, max_samples=100)
+            
+            if not samples:
                 continue
 
+            # 2. Write header based on the first pulled sample
             if not header_written:
-                header = ["Time"] + [f"Ch{i:02d}" for i in range(1, len(sample)+1)]
+                header = ["Time"] + [f"Ch{i:02d}" for i in range(1, len(samples[0]) + 1)]
                 writer.writerow(header)
                 header_written = True
 
-            writer.writerow([ts] + sample)
+            # 3. Zip timestamps and samples together and write rows efficiently
+            rows = [[ts] + sample for sample, ts in zip(samples, timestamps)]
+            writer.writerows(rows)
+            
+            # 4. Flush periodically per chunk, NOT per individual sample
             f.flush()
-            os.fsync(f.fileno())
+            # Avoid using os.fsync() inside the high-speed loop. 
+            # f.flush() is plenty safe for real-time recording.
             #print(f"Wrote EEG sample at {ts:.6f}s")
 
 
@@ -260,8 +271,8 @@ logger.info("Beamforming solution loaded.")
 SONICATION_TIME = 5 #seconds i believe  
 COOLDOWN_TIME = 7 #sonication time + cooldown time 
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
-MU = 2.32
-SIGMA = 4.18
+MU = 4
+SIGMA =0.97
 MAD_THRESHOLD = 60       # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
@@ -299,7 +310,7 @@ def theta_trigger_loop():
         sample, ts = inlet.pull_sample(timeout=1.0)
         if sample is None:
             break
-        theta_val = sample[5]  # Smoothed Power channel
+        theta_val = sample[5]  
         if last_theta_val is not None and theta_val == last_theta_val:
             continue
         last_theta_val = theta_val
@@ -365,25 +376,68 @@ def theta_trigger_loop():
 
 fs = 250 
 
+import gpype as gp
+from gpype.backend.core.o_node import ONode
+from gpype.backend.core.o_port import OPort  # <--- Crucial Import
+import pylsl
+import numpy as np
+
+def lsl_to_keyboard_bridge():
+    """
+    Listens for 'LIFU_ON' over LSL in the background.
+    When it hears it, it fakes a 'space' key press to trick g.Pype.
+    """
+    print("Bridge: Looking for LSL stream 'EEG_LIFU_events'...")
+    try:
+        streams = pylsl.resolve_byprop("name", "EEG_LIFU_events", timeout=5.0)
+        if not streams:
+            print("Bridge Warning: 'EEG_LIFU_events' stream not found. Auto-marking disabled.")
+            return
+        
+        inlet = pylsl.StreamInlet(streams[0])
+        print("Bridge: Connected! Listening for 'LIFU_ON' to trigger spacebar...")
+        
+        while RUNNING:
+            # Check for a marker (non-blocking)
+            sample, ts = inlet.pull_sample(timeout=0.1)
+            if sample is not None:
+                if str(sample[0]).strip() == "LIFU_ON":
+                    print("--- [LSL Bridge] Caught LIFU_ON -> Pressing Spacebar ---")
+                    keyboard.press('up')
+                    time.sleep(0.020)   # 20 ms
+                    keyboard.release('up')
+                    
+    except Exception as e:
+        print(f"Bridge Error: {e}")
+# =====================================================================
+# 2. Main g.Pype Pipeline Customization
+# =====================================================================
 def run_pipeline():
     global eeg_start_lsl
     app = gp.MainApp()
     p = gp.Pipeline()
     source = gp.BCICore8()
     
-    bandpass = gp.Bandpass(f_lo = 1.0, f_hi = 30.0, order = 4)
+    bandpass = gp.Bandpass(f_lo=1.0, f_hi=30.0, order=4)
     theta_filter = gp.Bandpass(f_lo=4.0, f_hi=7.0, order=4)
     notch60 = gp.Bandstop(f_lo=58, f_hi=62, order=4)
 
     power = gp.Equation("in**2")
+    #log_power = gp.Equation("log(in + 1e-20) / log(10)")
     moving_average = gp.MovingAverage(window_size=50)
     decimator = gp.Decimator(decimation_factor=10)
     hold = gp.Hold()
-    theta_z_eq = gp.Equation("(in - 2.32) / 4.18")
+    theta_z_eq = gp.Equation("(in - 0.35) / 0.97")
 
     trigger_scaling = gp.Equation("in/2")
 
+    # INSTANTIATE LSL MARKER SOURCE HERE
+    keyboard = gp.Keyboard()
+    #router = gp.Router(input_channels= [gp.Router.ALL, gp.Router.ALL])
+    mk = gp.TimeSeriesScope.Markers
+    markers = [ mk(color="r", label="up", channel=7, value=38)]
 
+    # FIXED ROUTER CONFIGURATION
     merger = gp.Router(
         input_channels={
             "raw_eeg": [0],
@@ -392,13 +446,17 @@ def run_pipeline():
             "moving_average": [0],
             "theta_z": [0],
             "hold": [0],
-            "channel_8": [7]
+            "channel_8": [7],
+            "Markers": [0]  # Take the first (and only) channel from our LslMarkerSource
         },
         output_channels=[gp.Router.ALL],
     )
 
+
     scope = gp.TimeSeriesScope(
-        amplitude_limit=20, time_window=10,
+        amplitude_limit=20, 
+        time_window=10,
+        markers=markers,
         channel_names=[
             "Raw EEG",
             "Theta Filter (4-7Hz)",
@@ -406,34 +464,42 @@ def run_pipeline():
             "Smoothed Power",
             "Theta Z-Score",
             "Decimated Power",
-            "Trigger Channel"
+            "Trigger Channel",
+            "LSL Markers"  
         ]
     )
 
-    sender = gp.LSLSender(stream_name = "EEG_gpype")  # default name/type; we’ll resolve by type='EEG'
+    sender = gp.LSLSender(stream_name="EEG_gpype")
     online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{hash_and_test}.csv")
     offline_writer = gp.CsvWriter(file_name=f"thetaEEG_full_{hash_and_test}.csv")
 
+    # Signal chain setup
     p.connect(source, notch60)
     p.connect(notch60, bandpass)
-    p.connect(bandpass,theta_filter)
+    p.connect(bandpass, theta_filter)
     p.connect(theta_filter, power)
     p.connect(power, moving_average)
+   # p.connect(power, log_power)
+   # p.connect(log_power, moving_average)
     p.connect(moving_average, theta_z_eq)
     p.connect(theta_z_eq, decimator)
     p.connect(decimator, hold)
-
     p.connect(bandpass, trigger_scaling)
 
+    # Route processing branches to merger inputs
     p.connect(source, merger["raw_eeg"])
     p.connect(theta_filter, merger["theta_filter"])
     p.connect(power, merger["power"])
+    #p.connect(log_power, merger["log_power"])
     p.connect(moving_average, merger["moving_average"])
     p.connect(hold, merger["hold"])
     p.connect(theta_z_eq, merger["theta_z"])
     p.connect(trigger_scaling, merger["channel_8"])
+    
+    # CONNECT THE NEW LSL MARKER NODE TO THE MERGER
+    p.connect(keyboard, merger["Markers"])
 
-
+    # Output connections
     p.connect(merger, scope)
     p.connect(merger, sender)
     p.connect(merger, online_writer)
@@ -442,50 +508,39 @@ def run_pipeline():
     app.add_widget(scope)
 
     p.start()
-    eeg_start_lsl = local_clock()  # set global start time for LSL relative timestamps
+    eeg_start_lsl = local_clock()
     try:
-        app.run()          # blocks until GUI close or Ctrl+C
+        app.run()
     except KeyboardInterrupt:
-        logger.info("Pipeline interrupted, stopping g.Pype...")
+        print("Pipeline interrupted, stopping g.Pype...")
     finally:
         p.stop()  
 
 
-    # p.start()
-
-    # app.run()
-
-    # p.stop()
-
 if __name__ == "__main__":
     try:
-        # Start thread to listen for experiment start trigger from PsychoPy
         listen_for_psychopy_thread = threading.Thread(target=listen_for_start, daemon=True)
         listen_for_psychopy_thread.start()
 
-        # Start theta closed-loop thread
         theta_thread = threading.Thread(target=theta_trigger_loop, daemon=False)
         theta_thread.start()
 
-        # Start LIFU marker recording thread
         lifu_record_thread = threading.Thread(target=record_lifu_numeric, daemon=False)
         lifu_record_thread.start()
 
-        # Start EEG recording thread
         eeg_record_thread = threading.Thread(target=record_eeg_lsl, daemon=False)
         eeg_record_thread.start()
 
-        # Start g.Pype pipeline
+        bridge_thread = threading.Thread(target=lsl_to_keyboard_bridge, daemon=True)
+        bridge_thread.start()
+
         run_pipeline()
 
     finally:
-            # ALWAYS stop threads when pipeline stops
-            RUNNING = False
-
-            try:
-                interface.hvcontroller.turn_hv_off()
-            except:
-                pass
-
-            theta_thread.join()
-            lifu_record_thread.join()
+        RUNNING = False
+        try:
+            interface.hvcontroller.turn_hv_off()
+        except:
+            pass
+        theta_thread.join()
+        lifu_record_thread.join()
