@@ -1,0 +1,33 @@
+# OW_closedloop dependencies
+# Closed-loop EEG theta -> LIFU pipeline
+#
+# Install with:  pip install -r requirements.txt
+# Python 3.10+ recommended.
+
+# Numerical
+numpy>=2.0
+
+# Lab Streaming Layer - EEG/marker transport between the g.Pype pipeline,
+# PsychoPy tasks, and the recorder threads
+pylsl>=1.18
+
+# g.Pype - g.tec BCI signal-processing pipeline (BCICore8 source, filters,
+# TimeSeriesScope, LSLSender, CsvWriter). Also pulls in a Qt backend.
+gpype>=3.0
+
+# OpenLIFU - Low-Intensity Focused Ultrasound hardware interface
+# (openlifu.io.LIFUInterface, beamforming, transducer/db, Pulse/Sequence/Solution)
+openlifu>=0.21
+
+# ---------------------------------------------------------------------------
+# Optional extras
+# ---------------------------------------------------------------------------
+# PsychoPy behavioral tasks in stroop/ and n-back-task-with-visual-stimuli/
+# were built with PsychoPy Builder and are usually launched from the PsychoPy
+# standalone environment. Uncomment only if you want to run them from this
+# venv as well.
+# psychopy
+
+# archive/slicer_test.py uses the `keyboard` package for a quick hotkey demo.
+# Uncomment if you actually run that script.
+# keyboard
