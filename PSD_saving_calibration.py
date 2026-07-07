@@ -32,7 +32,7 @@ def run_pipeline():
     notch60 = gp.Bandstop(f_lo=58, f_hi=62, order=4)
 
     power = gp.Equation("in**2")
-    log_power = gp.Equation("log(in + 1e-20) / log(10)")
+    #log_power = gp.Equation("log(in + 1e-20) / log(10)")
     moving_average = gp.MovingAverage(window_size=50)
     decimator = gp.Decimator(decimation_factor=10)
     hold = gp.Hold()
@@ -42,7 +42,7 @@ def run_pipeline():
             "raw_eeg": [0],
             "theta_filter": [0],
             "power": [0],
-            "log_power": [0],
+           # "log_power": [0],
             "moving_average": [0],
             "hold": [0]
         },
@@ -56,7 +56,7 @@ def run_pipeline():
             "Raw EEG",
             "Theta Filter (4-7Hz)",
             "Instantaneous Power",
-            "Log Power",
+           # "Log Power",
             "Smoothed Power",
             "Decimated Power"
         ],
@@ -67,15 +67,15 @@ def run_pipeline():
     p.connect(source, notch60)
     p.connect(notch60, theta_filter)
     p.connect(theta_filter, power)
-    p.connect(power, log_power)
-    p.connect(log_power, moving_average)
+    p.connect(power, moving_average)
+    #p.connect(log_power, moving_average)
     p.connect(moving_average, decimator)
     p.connect(decimator, hold)
 
     p.connect(source, merger["raw_eeg"])
     p.connect(theta_filter, merger["theta_filter"])
     p.connect(power, merger["power"])
-    p.connect(log_power, merger['log_power'])
+    #p.connect(log_power, merger['log_power'])
     p.connect(moving_average, merger["moving_average"])
     p.connect(hold, merger["hold"])
 
@@ -149,8 +149,11 @@ if __name__ == "__main__":
         time.sleep(2)  # allow LSL stream to appear
 
         theta_values = theta_calibration()
+        mu = np.mean(theta_values)
+        sigma = np.std(theta_values)
         print("Collected samples:", len(theta_values))
         print("min=", np.min(theta_values), "max=", np.max(theta_values))
+        print(f"Mean: {mu:.2f}, Std Dev: {sigma:.2f}")
 
         if len(theta_values) == 0:
             print("No clean samples collected; relax MAD_THRESHOLD or check channel index.")

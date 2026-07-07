@@ -54,9 +54,9 @@ logger.info("LIFU to PsychoPy LSL outlet created.")
 
 
 #sending markers to psychopy
-# lifu_num_info = StreamInfo('PsychoPy_numeric', 'Markers', 1, 0, 'float32')
-# lifu_num_outlet = StreamOutlet(lifu_num_info)
-# logger.info("LIFU to PsychoPy LSL outlet created.")
+lifu_num_info = StreamInfo('PsychoPy_numeric', 'Markers', 1, 0, 'float32')
+lifu_num_outlet = StreamOutlet(lifu_num_info)
+logger.info("LIFU to PsychoPy LSL outlet created.")
 
 
 #global variables for threads
@@ -82,7 +82,7 @@ def record_lifu_numeric():
 
 
         while RUNNING:
-            sample, ts= inlet.pull_sample(timeout=0.01)
+            sample, ts= inlet.pull_sample(timeout=0.1)
             if sample is None:
                 continue
             if sample:
@@ -141,10 +141,10 @@ COOLDOWN_TIME = 15 #sonication time + cooldown time
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
 MU = 3.12
 SIGMA =  5.31
-MAD_THRESHOLD = 60       # for artifact rejection in baseline collection
-INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
+MAD_THRESHOLD = 6       # for artifact rejection in baseline collection
+INITIAL_CUTOFF = 50.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
-sonication_enabled = True
+sonication_enabled = False
 NUM_SONICATIONS = 0
 
 
@@ -185,7 +185,7 @@ def theta_trigger_loop():
 
 
     while RUNNING:
-        sample, ts = inlet.pull_sample(timeout=1.0)
+        sample, ts = inlet.pull_sample(timeout=0.1)
         if sample is None:
             break
         theta_val = sample[11]  # Smoothed Power channel
@@ -230,11 +230,11 @@ def theta_trigger_loop():
         now = ts
         print(f"sonication_enabled={sonication_enabled}")
        
-        if sonication_enabled and theta_val < MAD_THRESHOLD and theta_val > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME and NUM_SONICATIONS<=10:
+        if sonication_enabled and theta_val < MAD_THRESHOLD and theta_val > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME and NUM_SONICATIONS<10:
             logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
             try:
                 eeg_trigger_outlet.push_sample(["LIFU_ON"])
-                #lifu_num_outlet.push_sample([1.0])
+                lifu_num_outlet.push_sample([1.0])
                 NUM_SONICATIONS += 1
                 # interface.hvcontroller.turn_hv_on()
                 # time.sleep(0.3) # this causes a lot of delay no?
@@ -243,7 +243,7 @@ def theta_trigger_loop():
                 #interface.txdevice.start_trigger()
                 time.sleep(SONICATION_TIME)
                 eeg_trigger_outlet.push_sample(["LIFU_OFF"])
-                #lifu_num_outlet.push_sample([0.0])
+                lifu_num_outlet.push_sample([0.0])
                 #interface.txdevice.stop_trigger()
 
 
@@ -285,7 +285,7 @@ def run_pipeline():
     moving_average = gp.MovingAverage(window_size=50)
     decimator = gp.Decimator(decimation_factor=10)
     hold = gp.Hold()
-    theta_z_eq = gp.Equation("(in - 2.32) / 4.18")
+    theta_z_eq = gp.Equation("(in - 5.36) / 6.60")
 
 
     trigger_scaling = gp.Equation("in/2")
@@ -414,13 +414,5 @@ if __name__ == "__main__":
     finally:
             # ALWAYS stop threads when pipeline stops
             RUNNING = False
-
-
-            try:
-                interface.hvcontroller.turn_hv_off()
-            except:
-                pass
-
-
             theta_thread.join()
             lifu_record_thread.join()
