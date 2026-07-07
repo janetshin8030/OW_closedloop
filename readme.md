@@ -11,7 +11,7 @@ The project integrates:
 Here are the following files in this Github:
 - n-back-task-with-visual-stimuli folder - PsychoPy Repo for the 2-back task
 - stroop folder - PsychoPy Repo for the Stroop test
-- hash_function.py - hash function for participant anonymity
+- hash_func.py - hash function for participant anonymity
 - PSD_saving_calibration.py - theta calibration to determine mu and sigma per individual over 180 second timeline
 - test_phantom.py - OpenLIFU Demo Code on Phantom
 - EEG_testing.py - lightly modified code from g.Pype
