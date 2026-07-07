@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -44,9 +45,9 @@ eeg_trigger_outlet = StreamOutlet(eeg_trigger_info)
 logger.info("LIFU to PsychoPy LSL outlet created.") 
 
 #sending markers to psychopy
-lifu_num_info = StreamInfo('PsychoPy_numeric', 'Markers', 1, 0, 'float32')
-lifu_num_outlet = StreamOutlet(lifu_num_info)
-logger.info("LIFU to PsychoPy LSL outlet created.") 
+# lifu_num_info = StreamInfo('PsychoPy_numeric', 'Markers', 1, 0, 'float32')
+# lifu_num_outlet = StreamOutlet(lifu_num_info)
+# logger.info("LIFU to PsychoPy LSL outlet created.") 
 
 #global variables for threads
 RUNNING = True
@@ -117,7 +118,7 @@ COOLDOWN_TIME = 15 #sonication time + cooldown time
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
 MU = 3.12
 SIGMA =  5.31
-MAD_THRESHOLD = 6       # for artifact rejection in baseline collection
+MAD_THRESHOLD = 60       # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
 sonication_enabled = True
@@ -157,7 +158,7 @@ def theta_trigger_loop():
         sample, ts = inlet.pull_sample(timeout=1.0)
         if sample is None:
             break
-        theta_val = sample[5]  # Smoothed Power channel
+        theta_val = sample[11]  # Smoothed Power channel
         if last_theta_val is not None and theta_val == last_theta_val:
             continue
         last_theta_val = theta_val
@@ -198,7 +199,7 @@ def theta_trigger_loop():
             logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
             try:
                 eeg_trigger_outlet.push_sample(["LIFU_ON"]) 
-                lifu_num_outlet.push_sample([1.0]) 
+                #lifu_num_outlet.push_sample([1.0]) 
                 NUM_SONICATIONS += 1
                 # interface.hvcontroller.turn_hv_on()
                 # time.sleep(0.3) # this causes a lot of delay no? 
@@ -206,7 +207,7 @@ def theta_trigger_loop():
                 #interface.txdevice.start_trigger()
                 time.sleep(SONICATION_TIME)
                 eeg_trigger_outlet.push_sample(["LIFU_OFF"])
-                lifu_num_outlet.push_sample([0.0])
+                #lifu_num_outlet.push_sample([0.0])
                 #interface.txdevice.stop_trigger() 
 
                 # interface.hvcontroller.turn_hv_off()
@@ -221,8 +222,15 @@ def theta_trigger_loop():
 fs = 250 
 
 def run_pipeline():
+    """
+    Runs the g.Pype processing pipeline headlessly (no gpype GUI/scope).
+    Real-time visualization of all LSL streams (raw EEG, EEG_gpype, and all
+    marker streams) is handled separately by lsl_visualizer.py.
+
+    Unless OW_NO_VISUALIZER is set, lsl_visualizer.py is launched
+    automatically as a subprocess and terminated when the pipeline stops.
+    """
     global eeg_start_lsl
-    app = gp.MainApp()
     p = gp.Pipeline()
     source = gp.BCICore8()
     
@@ -258,25 +266,6 @@ def run_pipeline():
         output_channels=[gp.Router.ALL],
     )
 
-    scope = gp.TimeSeriesScope(
-        amplitude_limit=20, time_window=10,
-        channel_names=[
-            "Channel 1",
-            "Channel 2",
-            "Channel 3",
-            "Channel 4",
-            "Channel 5",
-            "Channel 6",
-            "Channel 7",
-            "Theta Filter (4-7Hz)",
-            "Instantaneous Power",
-            "Smoothed Power",
-            "Theta Z-Score",
-            "Decimated Power",
-            "Trigger Channel"
-        ]
-    )
-
     sender = gp.LSLSender(stream_name = "EEG_gpype")  # default name/type; we’ll resolve by type='EEG'
     online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{hash_and_test}.csv")
     offline_writer = gp.CsvWriter(file_name=f"thetaEEG_full_{hash_and_test}.csv")
@@ -307,27 +296,39 @@ def run_pipeline():
     p.connect(trigger_scaling, merger["channel_8"])
 
 
-    p.connect(merger, scope)
     p.connect(merger, sender)
     p.connect(merger, online_writer)
     p.connect(source, offline_writer)
 
-    app.add_widget(scope)
+    visualizer_proc = None
+    if not os.environ.get("OW_NO_VISUALIZER"):
+        visualizer_path = Path(__file__).resolve().parent / "lsl_visualizer.py"
+        try:
+            visualizer_proc = subprocess.Popen([sys.executable, str(visualizer_path)])
+            logger.info("Launched lsl_visualizer.py (pid=%s).", visualizer_proc.pid)
+        except OSError as e:
+            logger.warning("Could not launch lsl_visualizer.py: %s", e)
 
     p.start()
     eeg_start_lsl = local_clock()  # set global start time for LSL relative timestamps
+    logger.info(
+        "g.Pype pipeline running headless (no GUI scope). "
+        "lsl_visualizer.py shows all LSL streams (EEG_gpype, markers, etc.) "
+        "in real time. Set OW_NO_VISUALIZER=1 to disable auto-launch."
+    )
     try:
-        app.run()          # blocks until GUI close or Ctrl+C
+        while RUNNING:
+            time.sleep(0.5)
     except KeyboardInterrupt:
         logger.info("Pipeline interrupted, stopping g.Pype...")
     finally:
-        p.stop()  
-
-    # p.start()
-
-    # app.run()
-
-    # p.stop()
+        p.stop()
+        if visualizer_proc is not None and visualizer_proc.poll() is None:
+            visualizer_proc.terminate()
+            try:
+                visualizer_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                visualizer_proc.kill()
 
 if __name__ == "__main__":
     try:

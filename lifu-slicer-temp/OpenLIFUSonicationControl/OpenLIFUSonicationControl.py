@@ -1071,7 +1071,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
 
     def lsl_loop(self, lifu_interface):
         logging.error(f"[THREAD] lifu_interface id: {id(lifu_interface)}")
-        streams = resolve_byprop('name', 'PsychoPy_numeric', timeout=30) # should i consider making this shorter in order to not sonicate accidentally once stream is cut off?
+        streams = resolve_byprop('name', 'EEG_LIFU_events', timeout=30) # should i consider making this shorter in order to not sonicate accidentally once stream is cut off?
         if not streams:
             logging.error("No EEG LSL stream found for theta.")
             self.running = False
@@ -1093,7 +1093,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
             logging.error(f"Received LSL sample: {sample}")
             #current_time = ts
 
-            if value == "1.0": # and current_time - last_trigger_time > COOLDOWN_WINDOW:
+            if value == "LIFU_ON": # and current_time - last_trigger_time > COOLDOWN_WINDOW:
                 self.starting_sonication(SONICATION_TIME, lifu_interface)
                 #last_trigger_time = ts
 
