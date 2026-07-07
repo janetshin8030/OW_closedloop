@@ -7,6 +7,10 @@
 # Numerical
 numpy>=2.0
 
+# MurmurHash - participant-id hashing in hash_func.py (produces `hash_and_test`,
+# imported by main_pipeline.py and python_sonication_pipeline.py)
+murmurhash>=1.0
+
 # Lab Streaming Layer - EEG/marker transport between the g.Pype pipeline,
 # PsychoPy tasks, and the recorder threads
 pylsl>=1.18
