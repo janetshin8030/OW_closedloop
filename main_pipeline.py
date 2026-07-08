@@ -185,7 +185,7 @@ def theta_trigger_loop():
 
 
     while RUNNING:
-        sample, ts = inlet.pull_sample(timeout=0.1)
+        sample, ts = inlet.pull_sample(timeout=0.01)
         if sample is None:
             break
         theta_val = sample[11]  # Smoothed Power channel
