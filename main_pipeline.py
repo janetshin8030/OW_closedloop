@@ -141,7 +141,7 @@ COOLDOWN_TIME = 15 #sonication time + cooldown time
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
 MU = 3.12
 SIGMA =  5.31
-MAD_THRESHOLD = 6       # for artifact rejection in baseline collection
+MAD_THRESHOLD = 600 #TESTING       # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 50.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
 sonication_enabled = False
@@ -164,10 +164,16 @@ def listen_for_start():
             break
 
 
-def theta_trigger_loop():
-    global NUM_SONICATIONS
-    logger.info("Waiting for theta LSL stream (type='EEG')...")
-    streams = resolve_byprop('name', 'EEG_gpype', timeout=30)
+def theta_sample_source(stream_name='EEG_gpype', channel_index=11, timeout=0.01):
+    """Pulls samples from the named LSL stream and yields (theta_val, ts) pairs
+    for theta_trigger_loop to consume. This is the only piece of
+    theta_trigger_loop that talks to LSL for its input; it's split out so
+    theta_trigger_loop's actual decision logic can be fed a different
+    (theta_val, ts) source -- e.g. replayed recorded samples in a test --
+    without touching the logic itself.
+    """
+    logger.info("Waiting for theta LSL stream (name=%r)...", stream_name)
+    streams = resolve_byprop('name', stream_name, timeout=30)
     if not streams:
         logger.error("No EEG LSL stream found for theta.")
         return
@@ -177,6 +183,28 @@ def theta_trigger_loop():
     logger.info("Connected to EEG LSL stream for theta.")
 
 
+    while RUNNING:
+        sample, ts = inlet.pull_sample(timeout=timeout)
+        if sample is None:
+            continue
+        yield sample[channel_index], ts
+
+
+def theta_trigger_loop(sample_source=None):
+    """Applies theta-thresholding + cooldown/artifact-rejection logic to a
+    stream of (theta_val, ts) pairs and emits LIFU_ON/OFF markers over LSL.
+
+    sample_source defaults to live LSL data via theta_sample_source(). Pass
+    any other iterable of (theta_val, ts) pairs (e.g. replayed recorded
+    samples with their original timestamps) to exercise this exact function
+    -- unmodified decision logic and marker emission included -- without
+    needing a live LSL stream.
+    """
+    global NUM_SONICATIONS
+    if sample_source is None:
+        sample_source = theta_sample_source()
+
+
     #theta_history = []
     last_trigger_time = 0
     last_theta_val = None
@@ -184,11 +212,9 @@ def theta_trigger_loop():
     buffer = []
 
 
-    while RUNNING:
-        sample, ts = inlet.pull_sample(timeout=0.01)
-        if sample is None:
+    for theta_val, ts in sample_source:
+        if not RUNNING:
             break
-        theta_val = sample[11]  # Smoothed Power channel
         if last_theta_val is not None and theta_val == last_theta_val:
             continue
         last_theta_val = theta_val
