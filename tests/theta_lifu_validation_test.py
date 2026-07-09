@@ -1,37 +1,23 @@
 """
-Validates main_pipeline.theta_trigger_loop -- the actual production function,
-decision logic and LIFU marker emission included -- against a recorded
-session, with no LSL involved at all.
+Runs main_pipeline.theta_trigger_loop directly over a recorded EEG_gpype
+stream (no LSL involved) and compares the LIFU_ON times it produces
+("offline") against the LIFU_ON times actually recorded live in the same
+xdf's EEG_LIFU_events stream ("online").
 
 theta_trigger_loop takes an optional `sample_source` iterable of (theta_val,
 ts) pairs (see main_pipeline.theta_sample_source for the live-LSL default).
-This test builds that iterable directly from the recorded EEG_gpype channel
-in the xdf file, using each sample's own recorded timestamp -- exactly the
-`ts` theta_trigger_loop would have seen live. Because feeding is synchronous
-(no threads, no network), the timestamp of the sample being fed at the moment
-a marker is pushed is known exactly, with no wall-clock jitter or pacing
-required.
-
-To capture that without a real LSL stream, main_pipeline.eeg_trigger_outlet /
-lifu_num_outlet (the two globals theta_trigger_loop calls .push_sample() on)
-are swapped for a recorder object for the duration of the run. This does not
-touch theta_trigger_loop's logic -- it calls the exact same .push_sample(...)
-it always does, just against a stand-in that records (marker, ts) instead of
-transmitting over LSL.
+Feeding it recorded (theta_val, ts) pairs directly -- using each sample's own
+recorded timestamp -- exercises the exact same decision logic and
+push_sample() marker emission as production, deterministically.
 
 Usage:
     python tests/theta_lifu_validation_test.py
-
-Then fill in EXPECTED_LIFU_ON_SECONDS below with the times you manually
-expect LIFU_ON to fire (seconds since the first EEG_gpype sample) and re-run
--- the script will report PASS/FAIL per expected time.
 """
 from __future__ import annotations
 
 import contextlib
 import io
 import sys
-import time
 import types
 from pathlib import Path
 
@@ -83,34 +69,33 @@ except ImportError:
 import main_pipeline  # noqa: E402
 
 
-XDF_PATH = Path(__file__).resolve().parent / "sub-demo_ses-demo_task-Default_run-001_eeg.xdf"
+XDF_PATH = Path(__file__).resolve().parent / "sub-scott_sham1_ses-scott_sham1_task-Default_run-001_eeg.xdf"
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
 THETA_CHANNEL_INDEX = 11
 
-# ---------------------------------------------------------------------------
-# Fill this in with the second-marks (relative to the first EEG_gpype sample)
-# where you expect LIFU_ON to fire, e.g. [12.9, 29.8, 49.7], then re-run.
-EXPECTED_LIFU_ON_SECONDS: list[float] = []
-TOLERANCE_SECONDS = 0.1
-
 
 class _RecordingOutlet:
-    """Stand-in for main_pipeline's real LSL StreamOutlet objects.
-
-    theta_trigger_loop calls outlet.push_sample([marker]) verbatim -- this
-    object accepts that same call and records (marker, ts) using the
+    """Stand-in for main_pipeline.eeg_trigger_outlet. theta_trigger_loop calls
+    .push_sample([marker]) verbatim; this records (marker, ts) using the
     timestamp of whichever recorded sample is currently being fed, instead of
     transmitting anything over LSL.
     """
 
-    def __init__(self, name, events, current_ts_holder):
-        self.name = name
+    def __init__(self, events, current_ts_holder):
         self._events = events
         self._current_ts_holder = current_ts_holder
 
     def push_sample(self, sample, *args, **kwargs):
-        self._events.append((self.name, sample[0], self._current_ts_holder["ts"]))
+        self._events.append((sample[0], self._current_ts_holder["ts"]))
+
+
+class _NoOpOutlet:
+    """Stand-in for main_pipeline.lifu_num_outlet -- its numeric 1.0/0.0
+    samples aren't needed for this comparison, just swallow them."""
+
+    def push_sample(self, sample, *args, **kwargs):
+        pass
 
 
 def _load_streams():
@@ -126,12 +111,11 @@ def _find_marker_time(marker_stream, marker_name):
 
 
 def _recorded_sample_source(eeg_stream, current_ts_holder, sonication_start_ts):
-    """Yields (theta_val, ts) pairs straight from the recorded EEG_gpype
-    channel, in original order, tagged with each sample's own recorded
-    timestamp. Flips main_pipeline.sonication_enabled True once the replay
-    reaches the recorded moment sonication was actually enabled live --
-    exactly mirroring what listen_for_start() would have done, without using
-    LSL to do it.
+    """Yields (theta_val, ts) pairs from the recorded EEG_gpype channel, in
+    order, tagged with each sample's own recorded timestamp. Flips
+    main_pipeline.sonication_enabled True once the replay reaches the
+    recorded moment sonication was actually enabled live -- mirroring
+    listen_for_start() without using LSL to do it.
     """
     for sample, ts in zip(eeg_stream["time_series"], eeg_stream["time_stamps"]):
         if sonication_start_ts is not None and ts >= sonication_start_ts:
@@ -140,109 +124,224 @@ def _recorded_sample_source(eeg_stream, current_ts_holder, sonication_start_ts):
         yield sample[THETA_CHANNEL_INDEX], ts
 
 
-def _check_against_expected(on_times):
-    expected = sorted(EXPECTED_LIFU_ON_SECONDS)
-    print(f"\nComparing against {len(expected)} expected LIFU_ON time(s) "
-          f"(tolerance = {TOLERANCE_SECONDS}s):")
-    unmatched_actual = list(on_times)
-    all_ok = True
-    for exp in expected:
-        best = min(unmatched_actual, key=lambda t: abs(t - exp), default=None)
-        if best is not None and abs(best - exp) <= TOLERANCE_SECONDS:
-            print(f"  PASS  expected {exp:7.3f}s -> matched {best:7.3f}s "
-                  f"(diff {abs(best - exp) * 1000:.0f}ms)")
-            unmatched_actual.remove(best)
-        else:
-            print(f"  FAIL  expected {exp:7.3f}s -> no produced trigger within tolerance")
-            all_ok = False
-    for extra in unmatched_actual:
-        print(f"  FAIL  unexpected LIFU_ON produced at {extra:7.3f}s with no matching expected time")
-        all_ok = False
-    print("\nRESULT:", "ALL PASS" if all_ok else "SOME FAILURES")
-
-
-def run():
-    streams = _load_streams()
-    eeg_stream = streams[EEG_STREAM_NAME]
-    t0_recorded = eeg_stream["time_stamps"][0]
-    duration = eeg_stream["time_stamps"][-1] - t0_recorded
-
-    sonication_start_ts = None
-    if TRIGGER_STREAM_NAME in streams:
-        sonication_start_ts = _find_marker_time(streams[TRIGGER_STREAM_NAME], "START_EXPERIMENT_RECEIVED")
-    if sonication_start_ts is None:
-        print(f"WARNING: no START_EXPERIMENT_RECEIVED marker found in {TRIGGER_STREAM_NAME}; "
-              "enabling sonication from the first sample instead.")
-        sonication_start_ts = t0_recorded
-
-    main_pipeline.sonication_enabled = False
+def _run_with_sample_source(sample_source, current_ts_holder):
+    """Runs the real main_pipeline.theta_trigger_loop against `sample_source`
+    (an iterable of (theta_val, ts) pairs that is itself responsible for
+    updating current_ts_holder["ts"] and flipping
+    main_pipeline.sonication_enabled at the right point), capturing every
+    push_sample(...) call without any LSL involved. Returns the raw
+    (marker, ts) event list.
+    """
     main_pipeline.NUM_SONICATIONS = 0
     main_pipeline.RUNNING = True
 
     events = []
-    current_ts_holder = {"ts": None}
     real_eeg_trigger_outlet = main_pipeline.eeg_trigger_outlet
     real_lifu_num_outlet = main_pipeline.lifu_num_outlet
-    main_pipeline.eeg_trigger_outlet = _RecordingOutlet("eeg_trigger", events, current_ts_holder)
-    main_pipeline.lifu_num_outlet = _RecordingOutlet("lifu_num", events, current_ts_holder)
+    main_pipeline.eeg_trigger_outlet = _RecordingOutlet(events, current_ts_holder)
+    main_pipeline.lifu_num_outlet = _NoOpOutlet()
 
-    print(f"Feeding {len(eeg_stream['time_stamps'])} recorded EEG_gpype samples "
-          f"({duration:.1f}s of recording) directly into theta_trigger_loop, no LSL involved.")
-    print(f"sonication_enabled will flip True at recorded t = {sonication_start_ts - t0_recorded:.3f}s.")
-    print("(suppressing theta_trigger_loop's own per-sample print() output)")
-
-    wall_start = time.perf_counter()
-    sample_source = _recorded_sample_source(eeg_stream, current_ts_holder, sonication_start_ts)
     try:
         # theta_trigger_loop prints a line on every accepted sample; swallow
         # it so tens of thousands of lines don't drown out the results below.
-        # The real time.sleep(SONICATION_TIME) inside theta_trigger_loop
-        # still runs for real on every genuine trigger.
         with contextlib.redirect_stdout(io.StringIO()):
             main_pipeline.theta_trigger_loop(sample_source=sample_source)
     finally:
         main_pipeline.eeg_trigger_outlet = real_eeg_trigger_outlet
         main_pipeline.lifu_num_outlet = real_lifu_num_outlet
-    wall_elapsed = time.perf_counter() - wall_start
 
-    on_times = sorted(ts - t0_recorded for outlet, marker, ts in events if marker == "LIFU_ON")
-    off_count = sum(1 for outlet, marker, ts in events if marker == "LIFU_OFF")
-    # LIFU_OFF fires after a real time.sleep(SONICATION_TIME) inside
-    # theta_trigger_loop, during which no further recorded samples are fed
-    # (the generator is paused), so there's no recorded sample to correlate
-    # it with. Its true recorded-time is definitionally ON + SONICATION_TIME,
-    # which is what we report rather than the (stale) correlated timestamp.
-    off_times = sorted(t + main_pipeline.SONICATION_TIME for t in on_times)
+    return events
 
-    print(f"\nDone in {wall_elapsed:.1f}s real time.")
-    print(f"\n{len(on_times)} LIFU_ON produced at t = " + ", ".join(f"{t:.3f}s" for t in on_times))
-    print(f"{off_count} LIFU_OFF produced ({main_pipeline.SONICATION_TIME}s after each ON) at t = "
-          + ", ".join(f"{t:.3f}s" for t in off_times))
-    if off_count != len(on_times):
-        print(f"WARNING: {len(on_times)} LIFU_ON but {off_count} LIFU_OFF -- mismatched count!")
 
-    # Reference-only: the LIFU_ON times actually recorded live in this xdf
-    # file, for a quick sanity comparison while you assemble your own
-    # expected times.
-    if TRIGGER_STREAM_NAME in streams:
-        recorded_on = sorted(
-            ts - t0_recorded
-            for marker, ts in zip(
-                (m[0] for m in streams[TRIGGER_STREAM_NAME]["time_series"]),
-                streams[TRIGGER_STREAM_NAME]["time_stamps"],
-            )
-            if marker == "LIFU_ON"
-        )
-        print(f"\n(reference) {len(recorded_on)} LIFU_ON recorded live in this xdf at t = "
-              + ", ".join(f"{t:.3f}s" for t in recorded_on))
+def run():
+    streams = _load_streams()
+    eeg_stream = streams[EEG_STREAM_NAME]
+    lifu_stream = streams[TRIGGER_STREAM_NAME]
+    t0 = eeg_stream["time_stamps"][0]
 
-    if EXPECTED_LIFU_ON_SECONDS:
-        _check_against_expected(on_times)
-    else:
-        print("\nNo EXPECTED_LIFU_ON_SECONDS set yet -- fill in that list at the top of this "
-              "file with your manually-determined times and re-run for a PASS/FAIL check.")
+    sonication_start_ts = _find_marker_time(lifu_stream, "START_EXPERIMENT_RECEIVED")
+    if sonication_start_ts is None:
+        print("WARNING: no START_EXPERIMENT_RECEIVED marker found; enabling sonication from the first sample.")
+        sonication_start_ts = t0
+
+    main_pipeline.sonication_enabled = False
+    current_ts_holder = {"ts": None}
+    sample_source = _recorded_sample_source(eeg_stream, current_ts_holder, sonication_start_ts)
+    events = _run_with_sample_source(sample_source, current_ts_holder)
+
+    offline_on = sorted(ts - t0 for marker, ts in events if marker == "LIFU_ON")
+    online_on = sorted(
+        ts - t0
+        for marker, ts in zip((m[0] for m in lifu_stream["time_series"]), lifu_stream["time_stamps"])
+        if marker == "LIFU_ON"
+    )
+
+    print("offline (re-run)   LIFU_ON: " + ", ".join(f"{t:.3f}s" for t in offline_on))
+    print("online  (recorded) LIFU_ON: " + ", ".join(f"{t:.3f}s" for t in online_on))
+
+    n = min(len(offline_on), len(online_on))
+    if n:
+        diffs = [online_on[i] - offline_on[i] for i in range(n)]
+        print(f"\ndiff (online - offline) for first {n} matched event(s), seconds:")
+        print(", ".join(f"{d:+.3f}" for d in diffs))
+    if len(offline_on) != len(online_on):
+        print(f"\nWARNING: {len(offline_on)} offline vs {len(online_on)} online LIFU_ON -- count mismatch.")
+
+    return offline_on, online_on
+
+
+# ---------------------------------------------------------------------------
+# Synthetic test cases: rather than replaying a recording, these construct a
+# theta_val sequence by hand so the correct behavior is known analytically
+# up front, and assert against it directly (PASS/FAIL) instead of just
+# diffing against a reference.
+FS = 250.0
+DT = 1.0 / FS
+TOLERANCE_S = 0.01  # 10ms: comfortably above float/grid rounding, tight vs. a 15s cooldown
+
+
+def _sine_values(n, center, amplitude, freq_hz):
+    """A smooth sine wave sampled at FS, rather than an instant square-wave
+    alternation. theta_trigger_loop's rolling artifact-rejection buffer is a
+    running median/MAD -- feeding it a perfectly bimodal square wave (flip
+    between exactly two fixed values every sample) can make the buffer's
+    accept/reject rates skew asymmetrically and collapse onto a single value
+    over time, which is a real quirk of that design but not representative of
+    continuous EEG data. A continuously-varying signal avoids it, and also
+    naturally avoids exact-repeat dedup without needing extra jitter.
+    """
+    import math
+    return [center + amplitude * math.sin(2 * math.pi * freq_hz * (i * DT)) for i in range(n)]
+
+
+def _synthetic_sample_source(theta_values, current_ts_holder, sonication_start_ts):
+    """Yields (theta_val, ts) pairs from a synthetic theta_values sequence
+    sampled at FS starting at t=0, flipping main_pipeline.sonication_enabled
+    True once ts reaches sonication_start_ts -- mirroring the real
+    START_EXPERIMENT_RECEIVED gate (listen_for_start()) without any LSL.
+    """
+    for i, theta_val in enumerate(theta_values):
+        ts = i * DT
+        if sonication_start_ts is not None and ts >= sonication_start_ts:
+            main_pipeline.sonication_enabled = True
+        current_ts_holder["ts"] = ts
+        yield theta_val, ts
+
+
+def test_constant_above_threshold():
+    """EEG data sits constantly inside the trigger band (THETA_THRESHOLD_Z,
+    MAD_THRESHOLD) for the whole recording. Since the threshold condition is
+    never the limiting factor, theta_trigger_loop should sonicate as soon as
+    each COOLDOWN_TIME window permits -- i.e. exactly every 15 seconds, no
+    more and no less often.
+    """
+    print("\n=== test_constant_above_threshold ===")
+    center, amplitude = 3.0, 0.3  # stays in [2.7, 3.3] -- comfortably inside (THETA_THRESHOLD_Z=1.5, MAD_THRESHOLD=6)
+    duration_s = 50.0
+    sonication_start_ts = 5.0  # START_EXPERIMENT_RECEIVED equivalent, well before any possible trigger
+
+    theta_values = _sine_values(int(duration_s / DT), center, amplitude, freq_hz=1.0)
+    main_pipeline.sonication_enabled = False
+    current_ts_holder = {"ts": None}
+    sample_source = _synthetic_sample_source(theta_values, current_ts_holder, sonication_start_ts)
+    events = _run_with_sample_source(sample_source, current_ts_holder)
+
+    on_times = sorted(ts for marker, ts in events if marker == "LIFU_ON")
+    print("LIFU_ON at t = " + ", ".join(f"{t:.3f}s" for t in on_times))
+
+    checks = []
+    checks.append(("at least 2 triggers to compare spacing", len(on_times) >= 2))
+    checks.append((
+        f"no trigger before sonication_start_ts ({sonication_start_ts}s)",
+        all(t >= sonication_start_ts for t in on_times),
+    ))
+    if on_times:
+        checks.append((
+            f"first trigger fires at the earliest legal instant (~{main_pipeline.COOLDOWN_TIME}s, "
+            "since last_trigger_time starts at 0)",
+            main_pipeline.COOLDOWN_TIME < on_times[0] <= main_pipeline.COOLDOWN_TIME + TOLERANCE_S,
+        ))
+    for a, b in zip(on_times, on_times[1:]):
+        spacing = b - a
+        checks.append((
+            f"spacing {a:.3f}s -> {b:.3f}s is exactly COOLDOWN_TIME ({spacing:.3f}s ~ "
+            f"{main_pipeline.COOLDOWN_TIME}s)",
+            main_pipeline.COOLDOWN_TIME <= spacing <= main_pipeline.COOLDOWN_TIME + TOLERANCE_S,
+        ))
+
+    return _report(checks)
+
+
+def test_oscillating_threshold():
+    """EEG data oscillates between clearly below threshold and clearly
+    within the trigger band. theta_trigger_loop should only ever sonicate
+    while the value is actually in-band, should never violate the cooldown
+    even though the value swings back into band multiple times per cooldown
+    window, and should never fire before sonication_enabled is set (the
+    START_EXPERIMENT_RECEIVED gate).
+    """
+    print("\n=== test_oscillating_threshold ===")
+    period_s = 12.0  # theta_val = 1.5 + 1.5*sin(2*pi*t/period_s) -> oscillates over [0.0, 3.0],
+    #                  crossing THETA_THRESHOLD_Z=1.5 twice per period (once rising, once falling)
+    duration_s = 80.0
+    sonication_start_ts = 20.0  # START_EXPERIMENT_RECEIVED equivalent -- deliberately mid-oscillation
+
+    theta_values = _sine_values(int(duration_s / DT), center=1.5, amplitude=1.5, freq_hz=1.0 / period_s)
+
+    def _is_high(ts):
+        # matches the sign of the sine used to build theta_values above
+        import math
+        return math.sin(2 * math.pi * (1.0 / period_s) * ts) > 0
+
+    main_pipeline.sonication_enabled = False
+    current_ts_holder = {"ts": None}
+    sample_source = _synthetic_sample_source(theta_values, current_ts_holder, sonication_start_ts)
+    events = _run_with_sample_source(sample_source, current_ts_holder)
+
+    on_times = sorted(ts for marker, ts in events if marker == "LIFU_ON")
+    print("LIFU_ON at t = " + ", ".join(f"{t:.3f}s" for t in on_times))
+
+    checks = []
+    checks.append(("at least 2 triggers occurred", len(on_times) >= 2))
+    checks.append((
+        f"no trigger before sonication_start_ts ({sonication_start_ts}s)",
+        all(t >= sonication_start_ts for t in on_times),
+    ))
+    checks.append((
+        "every trigger landed while theta_val was actually above THETA_THRESHOLD_Z, never during a low swing",
+        all(_is_high(t) for t in on_times),
+    ))
+    for a, b in zip(on_times, on_times[1:]):
+        checks.append((
+            f"cooldown respected between {a:.3f}s and {b:.3f}s (spacing {b - a:.3f}s >= "
+            f"COOLDOWN_TIME {main_pipeline.COOLDOWN_TIME}s)",
+            (b - a) >= main_pipeline.COOLDOWN_TIME - 1e-9,
+        ))
+
+    return _report(checks)
+
+
+def _report(checks):
+    all_ok = True
+    for description, passed in checks:
+        print(f"  {'PASS' if passed else 'FAIL'}  {description}")
+        all_ok = all_ok and passed
+    print("RESULT:", "PASS" if all_ok else "FAIL")
+    return all_ok
 
 
 if __name__ == "__main__":
     run()
+
+    results = {
+        "test_constant_above_threshold": test_constant_above_threshold(),
+        "test_oscillating_threshold": test_oscillating_threshold(),
+    }
+
+    print("\n=== Summary ===")
+    for name, passed in results.items():
+        print(f"  {'PASS' if passed else 'FAIL'}  {name}")
+
     print("\nTest complete.")
+    if not all(results.values()):
+        sys.exit(1)
