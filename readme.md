@@ -21,40 +21,92 @@ Here are the following files in this Github:
 
 We use **[LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder)** — the
 standard LSL recording app — to capture every stream from a run into a single,
-time-aligned **XDF** file. This runs alongside the pipeline scripts and does not
-require any code changes. XDF is more sensible than our per-stream CSVs because it
-embeds cross-stream clock-offset samples, so `pyxdf.load_xdf` returns streams that
-are correctly aligned in time without any manual timestamp math.
+time-aligned **XDF** file. `main_pipeline.py` launches and drives it automatically
+(see Per-run workflow below). XDF is more sensible than our per-stream CSVs because
+it embeds cross-stream clock-offset samples, so `pyxdf.load_xdf` returns streams
+that are correctly aligned in time without any manual timestamp math.
 
 ## Install (one-time)
 
 1. Download the latest Windows build from the
    [LabRecorder releases page](https://github.com/labstreaminglayer/App-LabRecorder/releases)
-   (e.g. `LabRecorder-1.16.x-Win_amd64.zip`).
-2. Unzip somewhere permanent, e.g. `C:\Tools\LabRecorder\`.
-3. Run `LabRecorder.exe` once to confirm it launches. `LabRecorderCLI.exe` is in the
-   same folder for headless / scripted use.
+   (e.g. `LabRecorder-1.17.0-Win_amd64.zip`) and unzip it **into this repo's root**
+   (any folder matching `LabRecorder*/LabRecorder.exe` works — e.g.
+   `LabRecorder-1.17.0-Win_amd64/`). `_find_labrecorder_exe()` in
+   `main_pipeline.py` auto-discovers it from there (picking the most recently
+   modified match if you have more than one version unzipped), so upgrading
+   LabRecorder later is just unzipping a new folder — no path to edit. If you'd
+   rather keep it somewhere else entirely, set
+   `OW_LABRECORDER_EXE=<path to LabRecorder.exe>`.
 
-## Per-run workflow
+That's it — no GUI configuration needed. `main_pipeline.py`'s
+`_ensure_labrecorder_cfg()` writes `StudyRoot`, `RequiredStreams`, and
+`RCSEnabled` directly into `LabRecorder.cfg` (next to the exe) before every
+launch, so it doesn't depend on the Config dialog's **Save** ever having
+persisted anything (in testing, it didn't — LabRecorder.cfg ships with every
+setting commented out as documentation, and the GUI's Save never wrote back
+into it). The four required streams it configures:
 
-1. **Start the pipeline scripts first.** Launch `python main_pipeline.py` (or
-   `python_sonication_pipeline.py`) and the PsychoPy task. This creates the LSL
-   outlets that LabRecorder will discover.
-2. **Open LabRecorder.** Under **Record from Streams**, verify all four expected
-   streams appear (hit **Update** if not):
+| Stream name        | Type    | Emitted by                                                                                                                            |
+|--------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `EEG_gpype`        | (data)  | `gp.LSLSender` in `run_pipeline` — 13 channels: raw 1–8 + theta filter, power, smoothed power, z-score, decimated power, trigger      |
+| `EEG_LIFU_events`  | Markers | `StreamOutlet` at the top of the script — `LIFU_ON` / `LIFU_OFF` / `collecting_baseline` / `START_EXPERIMENT_RECEIVED`                |
+| `PsychoPy_numeric` | Markers | `StreamOutlet` at the top of the script — `1.0` / `0.0` numeric ticks matching `LIFU_ON` / `LIFU_OFF`                                 |
+| `PsychoPyMarkers`  | Markers | PsychoPy task itself (e.g. `START_EXPERIMENT`, trial events)                                                                          |
 
-   | Stream name        | Type    | Emitted by                                                                                                                            |
-   |--------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------|
-   | `EEG_gpype`        | (data)  | `gp.LSLSender` in `run_pipeline` — 13 channels: raw 1–8 + theta filter, power, smoothed power, z-score, decimated power, trigger      |
-   | `EEG_LIFU_events`  | Markers | `StreamOutlet` at the top of the script — `LIFU_ON` / `LIFU_OFF` / `collecting_baseline` / `START_EXPERIMENT_RECEIVED`                |
-   | `PsychoPy_numeric` | Markers | `StreamOutlet` at the top of the script — `1.0` / `0.0` numeric ticks matching `LIFU_ON` / `LIFU_OFF`                                 |
-   | `PsychoPyMarkers`  | Markers | PsychoPy task itself (e.g. `START_EXPERIMENT`, trial events)                                                                          |
+Setting only `StudyRoot` (and not `StorageLocation`/`PathTemplate`) makes
+LabRecorder assume BIDS mode automatically with its default BIDS template —
+see "Filename template" below — so `start_lab_recorder()`'s runtime RCS
+`filename` command only ever needs to fill in `participant`/`session`/`task`.
 
-3. Check every stream you want captured (usually all four).
-4. Click **Start Recording**, run the experiment, click **Stop** when done.
+## Per-run workflow (automated)
 
-If a stream isn't listed, the corresponding script isn't running. If a stream drops
-mid-recording, the XDF stays valid — LabRecorder just marks the stream as ended.
+`main_pipeline.py` now drives both the PsychoPy task and LabRecorder for you.
+Just run `python main_pipeline.py` (set `OW_HARDWARE_ENABLED=1` first if you
+want the real transducer armed). Startup happens in this order:
+
+1. Hardware init (if `OW_HARDWARE_ENABLED=1`), then the theta/LIFU-marker/EEG
+   background threads start and begin listening.
+2. **PsychoPy task launches** via `start_psychopy()` — by default
+   `n-back-task-with-visual-stimuli/N-back_lastrun.py`, run with the separate
+   PsychoPy Python at `C:\Users\jshin\python.exe` (not the interpreter running
+   `main_pipeline.py` — that one doesn't have the `psychopy` package; override
+   with `OW_PSYCHOPY_PYTHON` if this moves), with its participant field
+   pre-filled to the script's `name_and_trial` (via `OW_PARTICIPANT`, read by
+   a small patch near the top of `N-back_lastrun.py`/`stroop_lastrun.py`). Its
+   info dialog still pops up so you can confirm/adjust session number, then
+   click OK to open the task window as usual. Set `OW_PSYCHOPY_SCRIPT` to
+   point at `stroop/stroop_lastrun.py` instead, or
+   `OW_NO_PSYCHOPY=1` to start the task by hand.
+3. **LabRecorder launches last**, once everything above is already under way,
+   via `start_lab_recorder()`: it attaches to an already-running LabRecorder
+   or launches `LabRecorder.exe`, then over the remote-control socket sends
+   `update`, `select all`, a `filename` command (participant/session/task set
+   from `name_and_trial` / `OW_SESSION`), and `start`. `EEG_gpype` and
+   `PsychoPyMarkers` typically don't exist yet at this point (the g.Pype
+   pipeline and the PsychoPy window are both still coming up) — they get
+   folded into the already-running recording automatically once they appear,
+   per the Required Streams config above. Set `OW_NO_LABRECORDER=1` to drive
+   LabRecorder manually instead.
+4. The g.Pype pipeline starts (`run_pipeline()`), creating `EEG_gpype` and
+   launching `lsl_visualizer.py`.
+
+**Ctrl+C stops everything**: the PsychoPy process is terminated, LabRecorder's
+recording is stopped (`stop` over RCS — the app itself stays open so you can
+inspect the file), the LIFU transducer's HV is powered off, and every
+background thread (theta loop, LIFU-marker CSV, EEG CSV) and the g.Pype
+pipeline / `lsl_visualizer.py` are stopped and joined before the script exits.
+Each of these runs as an isolated step (via `_cleanup_step()`), so one slow or
+failing step (e.g. `p.stop()` blocking on a hardware thread, or a second,
+impatient Ctrl+C landing mid-cleanup) logs a warning and moves on instead of
+silently skipping everything after it — which previously could leave
+`lsl_visualizer.py`'s window still open. LabRecorder, PsychoPy, and
+`lsl_visualizer.py` also run in their own Windows process group so they don't
+receive Ctrl+C directly from the console; they only stop via these explicit
+calls.
+
+If a required stream never shows up, the run still produces a valid XDF —
+LabRecorder just marks that stream as never having started.
 
 ## Filename template
 
@@ -65,7 +117,8 @@ never overwrites — if a target filename already exists, the old file is rename
 
 In **Config → File / Template**, use one of these:
 
-**BIDS mode** (recommended — tick the BIDS checkbox in the GUI):
+**BIDS mode** (this is what `_ensure_labrecorder_cfg()` sets up automatically —
+see Install above):
 
 ```
 sub-%p/ses-%s/eeg/sub-%p_ses-%s_task-%b_run-%r_eeg.xdf
@@ -109,17 +162,22 @@ mts     = by_name["EEG_LIFU_events"]["time_stamps"]
 
 ## Gotchas
 
-- **Streams must exist before LabRecorder discovers them.** Start the pipeline
-  scripts first, then open LabRecorder (or hit **Update** after starting scripts).
+- **A stream not on the Required Streams list still needs to exist before
+  LabRecorder discovers it** — the auto-add-when-it-comes-online behavior only
+  applies to streams in that list (see Install above). Anything else needs a
+  manual **Update** click (or an `update` RCS command) after it starts.
 - **Hostname is stored in the XDF header** even if it isn't in the filename
   template. If that matters for participant anonymization, strip it after the fact.
-- **CSV writers still run** in `main_pipeline.py` and `python_sonication_pipeline.py`.
+- **CSV writers still run** in `main_pipeline.py`.
   You'll get both `.csv` files and an `.xdf` per run. If disk space matters, comment
   out `record_lifu_numeric`, `record_eeg_lsl`, and the two `gp.CsvWriter(...)` calls
   — everything is already captured in the XDF.
-- **`LabRecorderCLI.exe`** in the install folder can be launched from a script for
-  fully automated runs, e.g.:
-  ```
-  LabRecorderCLI.exe C:\path\out.xdf "name='EEG_gpype' or type='Markers'"
-  ```
+- **`_ensure_labrecorder_cfg()` only runs when this script launches a fresh
+  LabRecorder process** — if an instance is already running (and its RCS port
+  is already open), `start_lab_recorder()` reuses it as-is instead of
+  relaunching, so config changes (e.g. after editing `LabRecorder.cfg` by
+  hand) need that instance restarted to take effect. If RCS still can't be
+  reached after a launch, `start_lab_recorder()` logs a warning and that run
+  falls back to needing the streams checked and Start clicked by hand in the
+  GUI.
 

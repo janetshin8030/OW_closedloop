@@ -53,6 +53,10 @@ expInfo = {
     'expVersion|hid': expVersion,
     'psychopyVersion|hid': psychopyVersion,
 }
+# pre-fill participant from main_pipeline.py's start_psychopy() so the info
+# dialog below doesn't need it typed by hand; no-op for a manual launch
+if os.environ.get('OW_PARTICIPANT'):
+    expInfo['participant'] = os.environ['OW_PARTICIPANT']
 
 # --- Define some variables which will change depending on pilot mode ---
 '''

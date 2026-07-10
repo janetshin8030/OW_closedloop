@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2026.1.3),
-    on July 09, 2026, at 14:55
+    on July 10, 2026, at 11:21
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -52,6 +52,10 @@ expInfo = {
     'expVersion|hid': expVersion,
     'psychopyVersion|hid': psychopyVersion,
 }
+# pre-fill participant from main_pipeline.py's start_psychopy() so the info
+# dialog below doesn't need it typed by hand; no-op for a manual launch
+if os.environ.get('OW_PARTICIPANT'):
+    expInfo['participant'] = os.environ['OW_PARTICIPANT']
 
 # --- Define some variables which will change depending on pilot mode ---
 '''
