@@ -25,27 +25,23 @@ sonication to inspect.
 Usage:
     python tests/trigger_accuracy_test.py
 
-Output: one PNG per LIFU_ON event under tests/trigger_accuracy_plots/ (with
-the detected trigger time marked alongside LIFU_ON), an all_windows.csv with
-every window stacked, and a latencies.csv with one row per window.
+Output: an all_windows.csv with every window stacked, and a latencies.csv
+with one row per window.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
-import matplotlib
-
-matplotlib.use("Agg")  # headless: save PNGs instead of requiring a display
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pyxdf
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 XDF_PATH = Path(__file__).resolve().parent / "sub-debug_ses-debug_task-Default_run-001_eeg.xdf"
+TRIAL_NAME = 'debug'
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
-OUTPUT_DIR = Path(__file__).resolve().parent / "trigger_accuracy_plots"
+OUTPUT_DIR = Path(__file__).resolve().parent /"trigger_accuracy_plots"/ f"{TRIAL_NAME}"
 
 WINDOW_SAMPLES = 500  # total frames per window (half before LIFU_ON, half after)
 TRIGGER_DETECT_MAD_THRESHOLD = 100  # spike must exceed the pre-marker baseline median by this many MADs
@@ -107,42 +103,6 @@ def _detect_trigger(window_df, lifu_on_ts, trigger_channel):
     return after.loc[hits[0], "Time"], median, mad
 
 
-def _plot_window(window_df, channel_cols, window_idx, lifu_on_ts, t0, trigger_channel, detected_ts):
-    # real recorded timestamps relative to the trigger, not an assumed fs
-    time_axis = window_df["Time"].to_numpy() - lifu_on_ts
-
-    fig, axes = plt.subplots(len(channel_cols), 1, figsize=(16, 10), sharex=True, dpi=150)
-    for ax, ch in zip(axes, channel_cols):
-        y = window_df[ch].to_numpy()
-        ax.plot(time_axis, y, color="#111111", linewidth=0.5)
-        pad = 0.05 * (y.max() - y.min() + 1e-9)  # per-channel autoscale: channels differ by orders of magnitude
-        ax.set_ylim(y.min() - pad, y.max() + pad)
-        ax.set_ylabel(ch, rotation=0, labelpad=30, verticalalignment="center", fontweight="bold")
-        ax.grid(True, linestyle=":", alpha=0.5, color="#aaaaaa")
-        ax.set_yticks([])
-        for spine in ["top", "right", "left", "bottom"]:
-            ax.spines[spine].set_visible(False)
-        ax.axvline(0.0, color="#d62728", linewidth=1.0, linestyle="--")
-        if ch == trigger_channel and detected_ts is not None:
-            ax.axvline(detected_ts - lifu_on_ts, color="#1f77b4", linewidth=1.0, linestyle=":")
-
-    axes[-1].spines["bottom"].set_visible(True)
-    axes[-1].spines["bottom"].set_color("#cccccc")
-    axes[-1].set_xlabel("Time relative to LIFU_ON (seconds)", fontsize=11, fontweight="bold")
-
-    plt.subplots_adjust(hspace=0.0)
-    title = f"EEG Scope -- window {window_idx} (LIFU_ON at t={lifu_on_ts - t0:.3f}s"
-    if detected_ts is not None:
-        title += f", trigger detected +{(detected_ts - lifu_on_ts) * 1000:.1f}ms)"
-    else:
-        title += f", no trigger detected above {TRIGGER_DETECT_MAD_THRESHOLD} MAD)"
-    plt.suptitle(title, fontsize=14, fontweight="bold", y=0.93)
-    out_path = OUTPUT_DIR / f"window_{window_idx:02d}_t{lifu_on_ts - t0:.3f}s.png"
-    fig.savefig(out_path)
-    plt.close(fig)
-    return out_path
-
-
 def run():
     streams = _load_streams()
     eeg_stream = streams[EEG_STREAM_NAME]
@@ -200,8 +160,6 @@ def run():
             "baseline_mad": baseline_mad,
         })
 
-        out_path = _plot_window(window_df, channel_cols, window_idx, ts, t0, trigger_channel, detected_ts)
-        print(f"    saved {out_path.relative_to(REPO_ROOT)}")
         window_idx += 1
 
     if stacked:

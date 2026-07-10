@@ -1,5 +1,6 @@
 import pandas as pd
-from hash_func import hash_and_test
+
+hash_and_test = "2back"
 
 # combines both files into one, matching the EEG time with the nearest LIFU marker time, and saves it as a new CSV file. 
 # Load both files

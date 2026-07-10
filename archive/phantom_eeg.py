@@ -16,7 +16,8 @@ else:
 
 import numpy as np
 from pylsl import StreamInlet, local_clock, resolve_byprop, StreamInfo, StreamOutlet
-from hash_func import hash_and_test
+
+hash_and_test = "2back"
 
 import gpype as gp 
 

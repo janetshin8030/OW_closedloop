@@ -21,6 +21,7 @@ import sys
 import types
 from pathlib import Path
 
+import numpy as np
 import pyxdf
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -57,15 +58,6 @@ except ImportError:
     _stub_module("openlifu.plan")
     _stub_module("openlifu.plan.solution", Solution=object)
 
-# main_pipeline also imports hash_func, which just derives a string used to
-# name its output CSV files (unrelated to theta_trigger_loop) but requires
-# the murmurhash package. Stub it too if it's not installed, rather than
-# pulling in a dependency this test doesn't need.
-try:
-    import hash_func  # noqa: F401
-except ImportError:
-    _stub_module("hash_func", hash_and_test="theta_lifu_validation_test")
-
 import main_pipeline  # noqa: E402
 
 
@@ -99,7 +91,7 @@ class _NoOpOutlet:
 
 
 def _load_streams():
-    streams, _ = pyxdf.load_xdf(str(XDF_PATH))
+    streams, _ = pyxdf.load_xdf(str(XDF_PATH), dejitter_timestamps=False)
     return {s["info"]["name"][0]: s for s in streams}
 
 
@@ -132,7 +124,6 @@ def _run_with_sample_source(sample_source, current_ts_holder):
     push_sample(...) call without any LSL involved. Returns the raw
     (marker, ts) event list.
     """
-    main_pipeline.NUM_SONICATIONS = 0
     main_pipeline.RUNNING = True
 
     events = []
@@ -151,6 +142,33 @@ def _run_with_sample_source(sample_source, current_ts_holder):
         main_pipeline.lifu_num_outlet = real_lifu_num_outlet
 
     return events
+
+
+def _stream_gap_report(eeg_stream, center_ts, window_s=1.0, ratio_threshold=1.5):
+    """Checks eeg_stream's own recorded timestamps within +/- window_s of
+    center_ts (absolute LSL time) for irregular sample-to-sample intervals,
+    relative to the stream's overall median interval.
+
+    Used to tell whether an online/offline LIFU_ON mismatch coincides with a
+    real hiccup in the recorded EEG_gpype stream (e.g. a dropped or
+    duplicated sample from whichever LSL consumer produced this recording)
+    rather than a decision-logic bug -- the two consumers (this recording and
+    theta_trigger_loop's own live inlet) are independent, so a stall on
+    either side can make them settle on different samples without the
+    decision logic itself disagreeing.
+    """
+    ts_arr = np.asarray(eeg_stream["time_stamps"])
+    all_diffs = np.diff(ts_arr)
+    nominal = float(np.median(all_diffs))
+
+    mask = (ts_arr[:-1] >= center_ts - window_s) & (ts_arr[:-1] <= center_ts + window_s)
+    anomalies = []
+    for i in np.nonzero(mask)[0]:
+        gap = float(all_diffs[i])
+        ratio = gap / nominal if nominal else float("inf")
+        if ratio > ratio_threshold or ratio < 1 / ratio_threshold:
+            anomalies.append((float(ts_arr[i]), gap, ratio))
+    return nominal, anomalies
 
 
 def run():
@@ -184,6 +202,23 @@ def run():
         diffs = [online_on[i] - offline_on[i] for i in range(n)]
         print(f"\ndiff (online - offline) for first {n} matched event(s), seconds:")
         print(", ".join(f"{d:+.3f}" for d in diffs))
+
+        GAP_CHECK_THRESHOLD_S = 0.010  # diffs bigger than this get a stream-gap diagnostic
+        for i, d in enumerate(diffs):
+            if abs(d) <= GAP_CHECK_THRESHOLD_S:
+                continue
+            center_ts = t0 + online_on[i]
+            nominal, anomalies = _stream_gap_report(eeg_stream, center_ts)
+            print(f"\n  event {i}: diff={d:+.3f}s exceeds {GAP_CHECK_THRESHOLD_S}s threshold -- "
+                  f"checking EEG_gpype timestamps near t={online_on[i]:.3f}s "
+                  f"(stream's nominal sample interval {nominal * 1000:.2f}ms):")
+            if anomalies:
+                for ts_at, gap, ratio in anomalies:
+                    print(f"    anomaly at t={ts_at - t0:.3f}s: interval={gap * 1000:.2f}ms "
+                          f"({ratio:.1f}x nominal) -- likely dropped/duplicated sample here")
+            else:
+                print("    no timestamp irregularities found near this event -- "
+                      "mismatch isn't explained by a recording gap.")
     if len(offline_on) != len(online_on):
         print(f"\nWARNING: {len(offline_on)} offline vs {len(online_on)} online LIFU_ON -- count mismatch.")
 

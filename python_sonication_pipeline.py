@@ -16,9 +16,14 @@ else:
 
 import numpy as np
 from pylsl import StreamInlet, local_clock, resolve_byprop, StreamInfo, StreamOutlet
-from hash_func import hash_and_test
 
-import gpype as gp 
+hash_and_test = "2back"
+
+# all CSV output goes here
+CSV_DIR = Path("csv_data")
+CSV_DIR.mkdir(exist_ok=True)
+
+import gpype as gp
 
 from openlifu.bf.pulse import Pulse
 from openlifu.bf.sequence import Sequence
@@ -65,7 +70,7 @@ def record_lifu_numeric():
     inlet = StreamInlet(streams[0])
     print("Connected to LIFU_numeric stream.")
 
-    with open(f"lifu_markers_1_{hash_and_test}.csv", "w", newline="") as f:
+    with open(CSV_DIR / f"lifu_markers_1_{hash_and_test}.csv", "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Time", "marker", "LSL_timestamp"])  # Header
 
@@ -95,7 +100,7 @@ def record_eeg_lsl():
     inlet = StreamInlet(streams[0])
     print("Connected to EEG LSL stream.")
 
-    with open(f"eeg_LSL_gpype{hash_and_test}.csv", "w", newline="") as f:
+    with open(CSV_DIR / f"eeg_LSL_gpype{hash_and_test}.csv", "w", newline="") as f:
         writer = csv.writer(f)
         header_written = False
 
@@ -464,8 +469,8 @@ def run_pipeline():
     )
 
     sender = gp.LSLSender(stream_name = "EEG_gpype")  # default name/type; we’ll resolve by type='EEG'
-    online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{hash_and_test}.csv")
-    offline_writer = gp.CsvWriter(file_name=f"thetaEEG_full_{hash_and_test}.csv")
+    online_writer = gp.CsvWriter(file_name=str(CSV_DIR / f"thetaEEG_gpype_{hash_and_test}.csv"))
+    offline_writer = gp.CsvWriter(file_name=str(CSV_DIR / f"thetaEEG_full_{hash_and_test}.csv"))
 
     p.connect(source, notch60)
     p.connect(notch60, bandpass)

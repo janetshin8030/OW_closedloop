@@ -20,7 +20,6 @@ else:
 
 import numpy as np
 from pylsl import StreamInlet, local_clock, resolve_byprop, StreamInfo, StreamOutlet
-from hash_func import hash_and_test
 
 
 import gpype as gp
@@ -34,8 +33,12 @@ from openlifu.io.LIFUInterface import LIFUInterface
 from openlifu.plan.solution import Solution
 
 
-# main pipeline from theta detection to LIFU triggering, sends markers to psychopy and EEG files
+# name convention
+name_and_trial = "demo"
 
+# all CSV output goes here
+CSV_DIR = Path("csv_data")
+CSV_DIR.mkdir(exist_ok=True)
 
 # logging
 logger = logging.getLogger(__name__)
@@ -76,7 +79,7 @@ def record_lifu_numeric():
     print("Connected to LIFU_numeric stream.")
 
 
-    with open(f"lifu_markers_1_{hash_and_test}.csv", "w", newline="") as f:
+    with open(CSV_DIR / f"lifu_markers_1_{name_and_trial}.csv", "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Time", "marker", "LSL_timestamp"])  # Header
 
@@ -111,7 +114,7 @@ def record_eeg_lsl():
     print("Connected to EEG LSL stream.")
 
 
-    with open(f"scope_eeg_{hash_and_test}.csv", "w", newline="") as f:
+    with open(CSV_DIR / f"scope_eeg_{name_and_trial}.csv", "w", newline="") as f:
         writer = csv.writer(f)
         header_written = False
 
@@ -177,7 +180,7 @@ def _router_channel_index(input_channels: dict, port_name: str) -> int:
     raise KeyError(f"{port_name!r} not in input_channels")
 
 
-THETA_CHANNEL_INDEX = _router_channel_index(ROUTER_INPUT_CHANNELS, "hold")  # Smoothed Power
+THETA_CHANNEL_INDEX = _router_channel_index(ROUTER_INPUT_CHANNELS, "hold")  # channel I want to see
 
 SONICATION_TIME = 5 #seconds i believe
 COOLDOWN_TIME = 15 #sonication time + cooldown time
@@ -187,8 +190,8 @@ SIGMA =  5.31
 MAD_THRESHOLD = 60 #TESTING       # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 50.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
+MAX_SONICATIONS = 10   # cap on NUM_SONICATIONS per run
 sonication_enabled = False
-NUM_SONICATIONS = 0
 
 
 
@@ -233,7 +236,17 @@ def theta_sample_source(stream_name='EEG_gpype', channel_index=THETA_CHANNEL_IND
         yield sample[channel_index], ts
 
 
-def theta_trigger_loop(sample_source=None):
+def theta_trigger_loop(
+    sample_source=None,
+    *,
+    sonication_time=SONICATION_TIME,
+    cooldown_time=COOLDOWN_TIME,
+    theta_threshold_z=THETA_THRESHOLD_Z,
+    mad_threshold=MAD_THRESHOLD,
+    initial_cutoff=INITIAL_CUTOFF,
+    buffer_size=BUFFER_SIZE,
+    max_sonications=MAX_SONICATIONS,
+):
     """Applies theta-thresholding + cooldown/artifact-rejection logic to a
     stream of (theta_val, ts) pairs and emits LIFU_ON/OFF markers over LSL.
 
@@ -242,8 +255,14 @@ def theta_trigger_loop(sample_source=None):
     samples with their original timestamps) to exercise this exact function
     -- unmodified decision logic and marker emission included -- without
     needing a live LSL stream.
+
+    The remaining keyword arguments default to the module-level constants of
+    the same name (SONICATION_TIME, COOLDOWN_TIME, etc.) but can be
+    overridden per-call -- e.g. a test passing a tiny sonication_time/
+    cooldown_time and a small max_sonications to exercise the NUM_SONICATIONS
+    cap in real time without waiting on production-sized delays.
     """
-    global NUM_SONICATIONS
+    NUM_SONICATIONS = 0
     if sample_source is None:
         sample_source = theta_sample_source()
 
@@ -264,11 +283,11 @@ def theta_trigger_loop(sample_source=None):
         # update rolling buffer
         # not enough data yet → just collect
         if len(buffer) <= 200:
-            if theta_val < INITIAL_CUTOFF:
+            if theta_val < initial_cutoff:
                 buffer.append(theta_val)
                 eeg_trigger_outlet.push_sample(["collecting_baseline"])
             continue
-        if len(buffer) > BUFFER_SIZE:
+        if len(buffer) > buffer_size:
             buffer.pop(0)
 
 
@@ -282,7 +301,7 @@ def theta_trigger_loop(sample_source=None):
         z = abs(theta_val - median) / mad
 
 
-        if z > MAD_THRESHOLD:
+        if z > mad_threshold:
             logger.info(
                 f"Artifact detected: {theta_val:.1f} (median={median:.1f}, MAD={mad:.1f}, z={z:.1f})"
             )
@@ -295,15 +314,21 @@ def theta_trigger_loop(sample_source=None):
         now = ts
         print(f"sonication_enabled={sonication_enabled}")
        
-        if sonication_enabled and theta_val < MAD_THRESHOLD and theta_val > THETA_THRESHOLD_Z and (now - last_trigger_time) > COOLDOWN_TIME and NUM_SONICATIONS<10:
+        if (
+            sonication_enabled
+            and theta_val < mad_threshold
+            and theta_val > theta_threshold_z
+            and (now - last_trigger_time) > cooldown_time
+            and NUM_SONICATIONS < max_sonications
+        ):
             logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
             try:
                 eeg_trigger_outlet.push_sample(["LIFU_ON"])
                 lifu_num_outlet.push_sample([1.0])
                 NUM_SONICATIONS += 1
-    
 
-                time.sleep(SONICATION_TIME)
+
+                time.sleep(sonication_time)
                 eeg_trigger_outlet.push_sample(["LIFU_OFF"])
                 lifu_num_outlet.push_sample([0.0])
 
@@ -313,7 +338,7 @@ def theta_trigger_loop(sample_source=None):
             except Exception as e:
                 logger.error(f"Error during theta-triggered sonication: {e}")
 
-
+    return NUM_SONICATIONS
 
 
 # gp pipeline for EEG headset
@@ -356,8 +381,8 @@ def run_pipeline():
 
 
     sender = gp.LSLSender(stream_name = "EEG_gpype")  # default name/type; we’ll resolve by type='EEG'
-    online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{hash_and_test}.csv")
-    offline_writer = gp.CsvWriter(file_name=f"thetaEEG_full_{hash_and_test}.csv")
+    online_writer = gp.CsvWriter(file_name=str(CSV_DIR / f"thetaEEG_gpype_{name_and_trial}.csv"))
+    offline_writer = gp.CsvWriter(file_name=str(CSV_DIR / f"thetaEEG_full_{name_and_trial}.csv"))
 
 
     p.connect(source, notch60)
