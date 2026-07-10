@@ -17,13 +17,8 @@ else:
 import numpy as np
 from pylsl import StreamInlet, local_clock, resolve_byprop, StreamInfo, StreamOutlet
 
-hash_and_test = "2back"
 
-# all CSV output goes here
-CSV_DIR = Path("csv_data")
-CSV_DIR.mkdir(exist_ok=True)
-
-import gpype as gp
+import gpype as gp 
 
 from openlifu.bf.pulse import Pulse
 from openlifu.bf.sequence import Sequence
@@ -33,7 +28,9 @@ from openlifu.io.LIFUInterface import LIFUInterface
 from openlifu.plan.solution import Solution
 
 # main pipeline from theta detection to LIFU triggering, sends markers to psychopy and EEG files
-
+name_and_trial = "demo"
+CSV_DIR = Path("csv_data")
+CSV_DIR.mkdir(exist_ok=True)
 # logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -60,6 +57,9 @@ logger.info("LIFU to PsychoPy LSL outlet created.")
 RUNNING = True
 
 #saving markers to csv
+# Listens on the "EEG_LIFU_events" LSL stream (the marker stream this same script
+# broadcasts to PsychoPy/EEG) and writes every marker it receives, with timestamps,
+# to a CSV file. Runs in its own thread until RUNNING is set to False.
 def record_lifu_numeric():
     print("Waiting for LIFU_numeric stream...")
     streams = resolve_byprop("name", "EEG_LIFU_events", timeout=30)
@@ -70,7 +70,7 @@ def record_lifu_numeric():
     inlet = StreamInlet(streams[0])
     print("Connected to LIFU_numeric stream.")
 
-    with open(CSV_DIR / f"lifu_markers_1_{hash_and_test}.csv", "w", newline="") as f:
+    with open(CSV_DIR / f"lifu_markers_1_{name_and_trial}.csv", "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Time", "marker", "LSL_timestamp"])  # Header
 
@@ -86,11 +86,10 @@ def record_lifu_numeric():
                 print("Wrote marker:", sample[0])
 
 
+# Connects to the raw EEG LSL stream and writes every incoming sample (all channels)
+# to its own CSV file, one row per sample. This is a separate, redundant recording
+# from the g.Pype pipeline's own CSV writer, kept as a backup/offline copy.
 def record_eeg_lsl():
-    """
-    Record EEG data from LSL to CSV for offline processing.
-    This is separate from the g.Pype pipeline's own CSV writing.
-    """
     print("Waiting for EEG LSL stream...")
     streams = resolve_byprop('type', 'EEG', timeout=30)
     if not streams:
@@ -100,7 +99,7 @@ def record_eeg_lsl():
     inlet = StreamInlet(streams[0])
     print("Connected to EEG LSL stream.")
 
-    with open(CSV_DIR / f"eeg_LSL_gpype{hash_and_test}.csv", "w", newline="") as f:
+    with open(CSV_DIR / f"eeg_LSL_gpype_{name_and_trial}.csv", "w", newline="") as f:
         writer = csv.writer(f)
         header_written = False
 
@@ -132,14 +131,10 @@ def init_hardware(
     duration_msec: float = 3,
     interval_msec: float = 10,
 ) -> tuple[LIFUInterface, Solution]:
-    """
-    Brings up the OpenLIFU hardware (transducer DB lookup, beamforming math,
-    USB connection, 12V/HV power-on, TX7332 enumeration) and loads a
-    beamforming Solution focused at (xInput, yInput, zInput) mm.
-
-    Only called from `if __name__ == "__main__":` below -- importing this
-    module must not touch hardware or require the device to be connected.
-    """
+    # Powers on and connects to the physical LIFU transducer hardware, computes the
+    # beamforming delays/apodizations needed to focus ultrasound at the (x, y, z)
+    # target point, and uploads that "Solution" to the device so it's ready to fire.
+    # Only called when this script is run directly -- never on import (e.g. tests).
     peak_to_peak_voltage = voltage * 2
     
     db_path = Path(r"C:\Users\jshin\Downloads\OpenLIFU-python\OpenLIFU-python\db_dvc")
@@ -301,12 +296,10 @@ ROUTER_INPUT_CHANNELS = {
 }
 
 
+# Looks up which column ("sample[i]") a named signal (e.g. "moving_average")
+# ends up in once the Router combines all its input channels into one flat LSL
+# sample. Needed because the Router just concatenates channels in dict order.
 def _router_channel_index(input_channels: dict, port_name: str) -> int:
-    """Index of `port_name`'s first channel in the Router's flattened
-    output -- i.e. the position `sample[i]` needs in every downstream
-    EEG_gpype LSL sample. Mirrors gp.Router's own flattening: ports land in
-    dict-iteration order, each contributing len(channels) output channels.
-    """
     idx = 0
     for name, channels in input_channels.items():
         if name == port_name:
@@ -327,6 +320,9 @@ INITIAL_CUTOFF = 100.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
 sonication_enabled = True
 
+# Waits (blocking) for a "START_EXPERIMENT" marker from PsychoPy over LSL, then
+# flips the sonication_enabled flag on and echoes an acknowledgment marker back.
+# This is what gates the theta-triggering loop until the experiment actually begins.
 def listen_for_start():
     global sonication_enabled
     inlet = StreamInlet(resolve_byprop("name", "PsychoPyMarkers")[0])
@@ -339,6 +335,11 @@ def listen_for_start():
             sonication_enabled = True
             break
 
+# The core closed-loop logic: reads the smoothed theta-power channel from the
+# live g.Pype LSL stream, builds a rolling baseline (median/MAD) to reject
+# artifacts, and once a clean sample crosses the z-score threshold (and enough
+# cooldown time has passed since the last trigger), tells the LIFU hardware to
+# fire a sonication pulse for SONICATION_TIME seconds and logs markers around it.
 def theta_trigger_loop(interface):
     logger.info("Waiting for theta LSL stream (type='EEG')...")
     streams = resolve_byprop('name', 'EEG_gpype', timeout=30)
@@ -425,6 +426,11 @@ def theta_trigger_loop(interface):
 
 fs = 250 
 
+# Builds and runs the g.Pype signal-processing graph: reads raw EEG from the
+# headset, applies notch/bandpass filtering, derives theta power (filter -> power
+# -> smoothing -> z-score -> decimation), routes all the intermediate signals into
+# one combined stream for the live scope display, LSL broadcast (for
+# theta_trigger_loop to consume), and CSV logging. Blocks until the GUI is closed.
 def run_pipeline():
     global eeg_start_lsl
     app = gp.MainApp()
@@ -469,8 +475,8 @@ def run_pipeline():
     )
 
     sender = gp.LSLSender(stream_name = "EEG_gpype")  # default name/type; we’ll resolve by type='EEG'
-    online_writer = gp.CsvWriter(file_name=str(CSV_DIR / f"thetaEEG_gpype_{hash_and_test}.csv"))
-    offline_writer = gp.CsvWriter(file_name=str(CSV_DIR / f"thetaEEG_full_{hash_and_test}.csv"))
+    online_writer = gp.CsvWriter(file_name=f"thetaEEG_gpype_{name_and_trial}.csv")
+    offline_writer = gp.CsvWriter(file_name=f"thetaEEG_full_{name_and_trial}.csv")
 
     p.connect(source, notch60)
     p.connect(notch60, bandpass)
