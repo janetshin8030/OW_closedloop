@@ -1,7 +1,9 @@
 # Standard library imports
 import asyncio
 import logging
+import os
 import re
+import socket
 import threading
 from datetime import datetime
 from enum import Enum
@@ -35,6 +37,17 @@ from pylsl import StreamInlet, local_clock, resolve_byprop, StreamInfo, StreamOu
 # but is done here for IDE and static analysis purposes
 if TYPE_CHECKING:
     import openlifu
+
+# Remote-run automation. OpenLIFUSonicationControlLogic starts a small local
+# TCP listener (_RemoteRunServer) on this host/port so an external process
+# (see main_pipeline.py's trigger_slicer_run()) can trigger the same action
+# as clicking the Run button, without needing to reach into this module's Qt
+# widgets from another process/interpreter. Only meaningful for the
+# GUI-driven hardware workflow (main_pipeline.py run without
+# OW_HARDWARE_ENABLED), where this module -- not main_pipeline.py -- holds
+# the LIFUInterface connection that actually fires the transducer.
+REMOTE_RUN_HOST = "127.0.0.1"
+REMOTE_RUN_PORT = int(os.environ.get("OW_SLICER_RUN_PORT", "18946"))
 
 #
 # OpenLIFUSonicationControl
@@ -538,11 +551,9 @@ class OpenLIFUSonicationControlWidget(ScriptedLoadableModuleWidget, VTKObservati
 
     def onRunClicked(self):
         logging.debug("onRunClicked() called")
-        if not slicer.util.getModuleLogic('OpenLIFUData').validate_solution():
-            raise RuntimeError("Invalid solution; not running sonication.")
         self.ui.runProgressBar.value = 0
 
-        self.logic.run() 
+        self.logic.remote_run()
         self.updateWorkflowControls()
         
     def onAbortClicked(self):
@@ -677,9 +688,70 @@ class LIFUQtSignals(qt.QObject):
     deviceConnected = qt.Signal()  # Emitted from monitor thread; Qt queues to main thread
     deviceDisconnected = qt.Signal()  # Emitted from monitor thread; Qt queues to main thread
     dataReceived = qt.Signal(str, str)  # (descriptor, message)
+    remoteRunRequested = qt.Signal()  # Emitted from _RemoteRunServer's thread; Qt queues to main thread
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+
+class _RemoteRunServer(threading.Thread):
+    """Background TCP listener that lets an external process (see
+    main_pipeline.py's trigger_slicer_run()) remotely press the Run button,
+    without that process being able to reach into this module's Qt widgets
+    directly -- it runs in Slicer's own embedded interpreter, a separate
+    process from main_pipeline.py.
+
+    Only ever accepts connections from localhost and only understands the
+    "run" command. The accept loop runs entirely in this daemon thread; it
+    never calls into Slicer/openlifu objects itself -- it only emits
+    remoteRunRequested, which Qt automatically queues onto the main thread,
+    since driving the LIFUInterface off the main thread is unsafe (same
+    reasoning as the existing deviceConnected/deviceDisconnected signals).
+    """
+
+    def __init__(self, qt_signals: "LIFUQtSignals", host: str, port: int):
+        super().__init__(daemon=True, name="OpenLIFUSonicationControlRemoteRun")
+        self._qt_signals = qt_signals
+        self._host = host
+        self._port = port
+        self._server_socket: Optional[socket.socket] = None
+
+    def run(self):
+        try:
+            self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self._server_socket.bind((self._host, self._port))
+            self._server_socket.listen(1)
+        except OSError as e:
+            logging.error("[LIFU] Could not start remote-run listener on %s:%d: %s", self._host, self._port, e)
+            return
+
+        logging.info("[LIFU] Remote-run listener started on %s:%d.", self._host, self._port)
+        while True:
+            try:
+                conn, _addr = self._server_socket.accept()
+            except OSError:
+                break  # socket closed by stop()
+            with conn:
+                try:
+                    data = conn.recv(1024).decode("utf-8", errors="ignore").strip().lower()
+                    if data == "run":
+                        logging.info("[LIFU] Remote-run command received; triggering sonication run.")
+                        self._qt_signals.remoteRunRequested.emit()
+                        conn.sendall(b"ok\n")
+                    else:
+                        logging.warning("[LIFU] Unknown remote command: %r", data)
+                        conn.sendall(b"error: unknown command\n")
+                except OSError as e:
+                    logging.warning("[LIFU] Remote-run connection error: %s", e)
+
+    def stop(self):
+        if self._server_socket is not None:
+            try:
+                self._server_socket.close()
+            except OSError:
+                pass
+
 
 class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
 
@@ -748,6 +820,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         self.qt_signals.deviceConnected.connect(self._dispatch_device_connected)
         self.qt_signals.deviceDisconnected.connect(self._dispatch_device_disconnected)
         self.qt_signals.dataReceived.connect(self._dispatch_data_received)
+        self.qt_signals.remoteRunRequested.connect(self._handle_remote_run_requested)
 
         self.cur_lifu_interface = openlifu_lz().io.LIFUInterface(run_async=True, TX_test_mode=False, HV_test_mode=False)
 
@@ -768,6 +841,9 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         self.monitoring_timer.setInterval(100)
         self.monitoring_timer.timeout.connect(self._pumpMonitoringLoop)
         self.monitoring_timer.start()
+
+        self._remote_run_server = _RemoteRunServer(self.qt_signals, REMOTE_RUN_HOST, REMOTE_RUN_PORT)
+        self._remote_run_server.start()
 
         self.cur_solution_on_hardware: Optional[openlifu.plan.Solution] = None
         """The active Solution object last sent to the ultrasound hardware."""
@@ -834,6 +910,8 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
 
     def __del__(self):
         print("OpenLIFUSonicationControlLogic.__del__ called")
+        if hasattr(self, "_remote_run_server"):
+            self._remote_run_server.stop()
 
     def getParameterNode(self):
         return OpenLIFUSonicationControlParameterNode(super().getParameterNode())
@@ -1053,6 +1131,26 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
 
         self.qt_signals.dataReceived.emit(descriptor, message)
     
+    def _handle_remote_run_requested(self):
+        """Slot for remoteRunRequested, always invoked on the main thread by
+        Qt's queued-connection handling of a cross-thread signal emission
+        (see _RemoteRunServer). Exceptions from remote_run() (e.g. no
+        approved solution loaded yet) are logged rather than raised, since
+        there is no caller here to catch them."""
+        try:
+            self.remote_run()
+        except Exception as e:
+            logging.error("[LIFU] Remote run request failed: %s", e)
+
+    def remote_run(self):
+        """Programmatic equivalent of clicking the Run button: same
+        validation as OpenLIFUSonicationControlWidget.onRunClicked, then
+        starts the run. Shared by the button and by _RemoteRunServer so both
+        trigger paths behave identically."""
+        if not slicer.util.getModuleLogic('OpenLIFUData').validate_solution():
+            raise RuntimeError("Invalid solution; not running sonication.")
+        self.run()
+
     def run(self):
         " Returns True when the sonication control algorithm is done"
         logging.error("Logic.run() called")

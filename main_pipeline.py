@@ -35,7 +35,7 @@ from openlifu.plan.solution import Solution
 
 
 # name convention
-name_and_trial = "test"
+name_and_trial = "gui"
 
 # all CSV output goes here
 CSV_DIR = Path("csv_data")
@@ -335,6 +335,43 @@ def start_psychopy() -> subprocess.Popen | None:
     )
     logger.info("Launched PsychoPy task %s (pid=%s).", PSYCHOPY_SCRIPT.name, proc.pid)
     return proc
+
+
+# Slicer remote-run automation. OpenLIFUSonicationControl.py (the Slicer
+# module) starts a small local TCP listener on SLICER_RUN_PORT; this sends it
+# the same command as clicking its Run button. Only meaningful when
+# HARDWARE_ENABLED is False -- that's the workflow where Slicer's GUI (not
+# this script) holds the LIFUInterface connection and does the actual
+# hardware firing off of the PsychoPy_numeric LSL markers this script emits
+# (see theta_trigger_loop). Slicer must already be running with the module
+# open, device connected, and an approved solution sent to hardware -- this
+# only presses the Run button, it doesn't do that setup. Set
+# OW_NO_SLICER_AUTORUN=1 to skip this and click Run by hand instead.
+SLICER_RUN_HOST = "127.0.0.1"
+SLICER_RUN_PORT = int(os.environ.get("OW_SLICER_RUN_PORT", "18946"))
+
+
+def trigger_slicer_run(timeout: float = 5.0) -> bool:
+    if os.environ.get("OW_NO_SLICER_AUTORUN"):
+        logger.info("OW_NO_SLICER_AUTORUN set; not auto-triggering the Slicer Run button.")
+        return False
+    try:
+        with socket.create_connection((SLICER_RUN_HOST, SLICER_RUN_PORT), timeout=timeout) as sock:
+            sock.sendall(b"run\n")
+            reply = sock.recv(1024).decode("utf-8", errors="ignore").strip()
+        if reply == "ok":
+            logger.info("Triggered Slicer's Run button over the remote-run listener.")
+            return True
+        logger.warning("Slicer remote-run listener replied unexpectedly: %r", reply)
+        return False
+    except OSError as e:
+        logger.warning(
+            "Could not reach Slicer's remote-run listener (%s:%d): %s. Is Slicer running "
+            "with the OpenLIFUSonicationControl module open, device connected, and solution "
+            "sent to hardware? Click Run manually instead.",
+            SLICER_RUN_HOST, SLICER_RUN_PORT, e,
+        )
+        return False
 
 
 PSYCHOPY_STOP_SENTINEL = -1.0  # never used for a real LIFU_ON/OFF tick (those are 1.0/0.0)
@@ -967,6 +1004,14 @@ if __name__ == "__main__":
         # into the recording automatically as they come online, per its
         # Required Streams config -- see readme.md.
         lab_recorder_proc, lab_recorder_started = start_lab_recorder()
+
+
+        # Press Run in the Slicer GUI for the user, if that's the hardware
+        # path being used (see trigger_slicer_run()'s docstring). Skipped
+        # entirely when HARDWARE_ENABLED, since then this script fires the
+        # hardware directly instead of relying on Slicer's Run button.
+        if not HARDWARE_ENABLED:
+            trigger_slicer_run()
 
 
         # Start g.Pype pipeline
