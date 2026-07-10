@@ -61,7 +61,7 @@ except ImportError:
 import main_pipeline  # noqa: E402
 
 
-XDF_PATH = Path(__file__).resolve().parent / "sub-scott_sham1_ses-scott_sham1_task-Default_run-001_eeg.xdf"
+XDF_PATH = Path(__file__).resolve().parent.parent / "xdf_data\\sub-test\\ses-1\\eeg\\sub-test_ses-1_task-test_run-001_eeg.xdf"
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
 THETA_CHANNEL_INDEX = 11

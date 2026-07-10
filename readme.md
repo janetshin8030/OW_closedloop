@@ -91,19 +91,34 @@ want the real transducer armed). Startup happens in this order:
 4. The g.Pype pipeline starts (`run_pipeline()`), creating `EEG_gpype` and
    launching `lsl_visualizer.py`.
 
-**Ctrl+C stops everything**: the PsychoPy process is terminated, LabRecorder's
-recording is stopped (`stop` over RCS — the app itself stays open so you can
-inspect the file), the LIFU transducer's HV is powered off, and every
-background thread (theta loop, LIFU-marker CSV, EEG CSV) and the g.Pype
-pipeline / `lsl_visualizer.py` are stopped and joined before the script exits.
-Each of these runs as an isolated step (via `_cleanup_step()`), so one slow or
-failing step (e.g. `p.stop()` blocking on a hardware thread, or a second,
-impatient Ctrl+C landing mid-cleanup) logs a warning and moves on instead of
-silently skipping everything after it — which previously could leave
-`lsl_visualizer.py`'s window still open. LabRecorder, PsychoPy, and
+**Ctrl+C stops everything**: PsychoPy is asked to stop *gracefully* first (see
+below), LabRecorder's recording is stopped (`stop` over RCS — the app itself
+stays open so you can inspect the file), the LIFU transducer's HV is powered
+off, and every background thread (theta loop, LIFU-marker CSV, EEG CSV) and
+the g.Pype pipeline / `lsl_visualizer.py` are stopped and joined before the
+script exits. Each of these runs as an isolated step (via `_cleanup_step()`),
+so one slow or failing step (e.g. `p.stop()` blocking on a hardware thread, or
+a second, impatient Ctrl+C landing mid-cleanup) logs a warning and moves on
+instead of silently skipping everything after it — which previously could
+leave `lsl_visualizer.py`'s window still open. LabRecorder, PsychoPy, and
 `lsl_visualizer.py` also run in their own Windows process group so they don't
 receive Ctrl+C directly from the console; they only stop via these explicit
 calls.
+
+**PsychoPy saves its data on Ctrl+C.** `stop_psychopy()` pushes a sentinel
+value (`-1.0`) on the `PsychoPy_numeric` LSL stream instead of immediately
+killing the process. `N-back_lastrun.py`/`stroop_lastrun.py` poll that stream
+every frame (they already did, to watch for LIFU on/off ticks) and treat
+`-1.0` exactly like pressing **Escape**: `thisExp.status` is set to
+`FINISHED`, the task's own code returns cleanly and calls `saveData()` (its
+`.csv`/`.psydat`), and *then* the process exits on its own. `stop_psychopy()`
+waits up to 8s for that before falling back to a hard
+`terminate()`/`kill()` — which only happens (and data for that run is lost)
+if the task never got far enough to be polling the stream yet, e.g. it's
+still sitting on the participant-info dialog. If you recompile either script
+from its `.psyexp` in PsychoPy Builder, these patches (plus the
+`OW_PARTICIPANT` pre-fill from Per-run workflow above) are hand-added and
+will need to be re-applied.
 
 If a required stream never shows up, the run still produces a valid XDF —
 LabRecorder just marks that stream as never having started.

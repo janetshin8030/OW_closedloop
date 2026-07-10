@@ -37,7 +37,7 @@ import pandas as pd
 import pyxdf
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-XDF_PATH = Path(__file__).resolve().parent / "sub-debug_ses-debug_task-Default_run-001_eeg.xdf"
+XDF_PATH = REPO_ROOT / "xdf_data/sub-test/ses-1/eeg/sub-test_ses-1_task-test_run-001_eeg.xdf"
 TRIAL_NAME = 'debug'
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"

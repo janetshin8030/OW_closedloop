@@ -572,6 +572,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 # a response ends the routine
                 continueRoutine = False
         
+        # check for a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
+        # pushes -1.0 on PsychoPy_numeric so this task saves its data before
+        # exiting, same as pressing Escape below)
+        if lifu_inlet is not None:
+            _stop_sample, _ = lifu_inlet.pull_sample(timeout=0.0)
+            if _stop_sample is not None and _stop_sample[0] == -1.0:
+                thisExp.status = FINISHED
         # check for quit (typically the Esc key)
         if defaultKeyboard.getKeys(keyList=["escape"]):
             thisExp.status = FINISHED
@@ -699,6 +706,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 fixation_1.status = FINISHED
                 fixation_1.setAutoDraw(False)
         
+        # check for a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
+        # pushes -1.0 on PsychoPy_numeric so this task saves its data before
+        # exiting, same as pressing Escape below)
+        if lifu_inlet is not None:
+            _stop_sample, _ = lifu_inlet.pull_sample(timeout=0.0)
+            if _stop_sample is not None and _stop_sample[0] == -1.0:
+                thisExp.status = FINISHED
         # check for quit (typically the Esc key)
         if defaultKeyboard.getKeys(keyList=["escape"]):
             thisExp.status = FINISHED
@@ -988,11 +1002,16 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # Run 'Each Frame' code from code_2
             if lifu_inlet is not None:
                 sample, ts = lifu_inlet.pull_sample(timeout=0.0)
-            
+
                 if sample is not None:
                     last_lifu_event = sample[0]
-            
-            
+                    # a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
+                    # pushes -1.0 on PsychoPy_numeric) so this task saves its data
+                    # before exiting, same as pressing Escape below
+                    if sample[0] == -1.0:
+                        thisExp.status = FINISHED
+
+
             # check for quit (typically the Esc key)
             if defaultKeyboard.getKeys(keyList=["escape"]):
                 thisExp.status = FINISHED
@@ -1155,6 +1174,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 thank_you.status = FINISHED
                 thank_you.setAutoDraw(False)
         
+        # check for a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
+        # pushes -1.0 on PsychoPy_numeric so this task saves its data before
+        # exiting, same as pressing Escape below)
+        if lifu_inlet is not None:
+            _stop_sample, _ = lifu_inlet.pull_sample(timeout=0.0)
+            if _stop_sample is not None and _stop_sample[0] == -1.0:
+                thisExp.status = FINISHED
         # check for quit (typically the Esc key)
         if defaultKeyboard.getKeys(keyList=["escape"]):
             thisExp.status = FINISHED
@@ -1293,11 +1319,19 @@ if __name__ == '__main__':
     logFile = setupLogging(filename=thisExp.dataFileName)
     win = setupWindow(expInfo=expInfo)
     setupDevices(expInfo=expInfo, thisExp=thisExp, win=win)
-    run(
-        expInfo=expInfo, 
-        thisExp=thisExp, 
-        win=win,
-        globalClock='float'
-    )
+    try:
+        run(
+            expInfo=expInfo,
+            thisExp=thisExp,
+            win=win,
+            globalClock='float'
+        )
+    except KeyboardInterrupt:
+        # belt-and-suspenders: the stop-signal checks in run()'s frame loops
+        # are the primary way main_pipeline.py's stop_psychopy() gets this
+        # task to exit gracefully, but if a raw Ctrl+C ever reaches this
+        # process directly, still fall through to saveData() below instead
+        # of losing this participant's data to an unhandled exception.
+        pass
     saveData(thisExp=thisExp)
     quit(thisExp=thisExp, win=win)

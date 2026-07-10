@@ -337,7 +337,37 @@ def start_psychopy() -> subprocess.Popen | None:
     return proc
 
 
+PSYCHOPY_STOP_SENTINEL = -1.0  # never used for a real LIFU_ON/OFF tick (those are 1.0/0.0)
+
+
 def stop_psychopy(proc: subprocess.Popen | None) -> None:
+    """Asks the PsychoPy task to stop gracefully before falling back to a
+    hard kill. Pushes PSYCHOPY_STOP_SENTINEL on lifu_num_outlet
+    (PsychoPy_numeric) -- N-back_lastrun.py/stroop_lastrun.py poll that
+    stream every frame and treat this value exactly like pressing Escape:
+    thisExp.status is set to FINISHED, so run() returns and __main__ still
+    reaches saveData() before the process exits, instead of losing that
+    participant's .csv/.psydat to subprocess.terminate() mid-experiment.
+
+    Falls back to _terminate_proc() if the process doesn't exit on its own
+    within a few seconds -- e.g. it's still on the info dialog, before
+    anything is polling for the sentinel yet.
+    """
+    if proc is None or proc.poll() is not None:
+        return
+    try:
+        lifu_num_outlet.push_sample([PSYCHOPY_STOP_SENTINEL])
+    except Exception as e:
+        logger.warning("Failed to send PsychoPy stop signal over LSL: %s", e)
+    try:
+        proc.wait(timeout=8.0)
+        logger.info("PsychoPy exited on its own after the stop signal (data saved).")
+        return
+    except subprocess.TimeoutExpired:
+        logger.warning(
+            "PsychoPy didn't exit within 8s of the stop signal (maybe still on the "
+            "info dialog); forcing it closed -- its data for this run may not be saved."
+        )
     _terminate_proc(proc)
 
 
