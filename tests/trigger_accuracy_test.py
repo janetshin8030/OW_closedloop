@@ -42,13 +42,13 @@ import pandas as pd
 import pyxdf
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-XDF_PATH = Path(__file__).resolve().parent / "sub-archive2back_ses-archive2back_task-Default_run-001_eeg.xdf"
+XDF_PATH = Path(__file__).resolve().parent / "sub-debug_ses-debug_task-Default_run-001_eeg.xdf"
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
 OUTPUT_DIR = Path(__file__).resolve().parent / "trigger_accuracy_plots"
 
-WINDOW_SAMPLES = 2000  # total frames per window (half before LIFU_ON, half after)
-TRIGGER_DETECT_MAD_THRESHOLD = 10  # spike must exceed the pre-marker baseline median by this many MADs
+WINDOW_SAMPLES = 500  # total frames per window (half before LIFU_ON, half after)
+TRIGGER_DETECT_MAD_THRESHOLD = 100  # spike must exceed the pre-marker baseline median by this many MADs
 
 
 def _load_streams():

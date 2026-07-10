@@ -1038,7 +1038,11 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
                     if parsed["status"] == "STOPPED":
                         logging.info("Trigger is stopped.")
                         self.cur_lifu_interface.set_status(openlifu_lz().io.LIFUInterfaceStatus.STATUS_FINISHED)
-                        self.qt_signals.finishScanning.emit(True)  # Signal that scanning is finished 
+                        # Note: finishScanning (the "save run?" dialog) is NOT emitted here.
+                        # Since lsl_loop fires start_trigger()/stop_trigger() once per LSL
+                        # marker, a "STOPPED" status arrives after every individual trigger,
+                        # not just at the end of the whole run -- finishScanning is emitted
+                        # once, from lsl_loop, when the run session as a whole ends.
                     else:
                         #update status
                         self.cur_lifu_interface.set_status(openlifu_lz().io.LIFUInterfaceStatus.STATUS_RUNNING)
@@ -1094,12 +1098,24 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
             #current_time = ts
 
             if value == "1.0": # and current_time - last_trigger_time > COOLDOWN_WINDOW:
+                logging.error(f"[LATENCY] sample received at t={local_clock():.6f} (lsl sample ts={ts:.6f})")
                 self.starting_sonication(SONICATION_TIME, lifu_interface)
                 #last_trigger_time = ts
 
+        # The while loop above only exits once the whole run session is over
+        # (self.running was set False via stop()/abort(), or the LSL stream
+        # was never found) -- that's the point to signal run completion, not
+        # each individual trigger's hardware STOPPED status.
+        logging.error("lsl_loop exiting -- run session complete.")
+        self.qt_signals.finishScanning.emit(True)
+
 
     def starting_sonication(self, duration, lifu_interface):
+        pre_call_ts = local_clock()
+        logging.error(f"[LATENCY] calling start_trigger() at t={pre_call_ts:.6f}")
         if lifu_interface.txdevice.start_trigger():
+            post_call_ts = local_clock()
+            logging.error(f"[LATENCY] start_trigger() returned at t={post_call_ts:.6f} (call took {(post_call_ts - pre_call_ts) * 1000:.1f}ms)")
             logging.error("Trigger Running...")
             print(lifu_interface.hvcontroller.get_hv_status())
             

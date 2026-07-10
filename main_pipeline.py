@@ -136,7 +136,50 @@ def record_eeg_lsl():
 
 
 
-SONICATION_TIME = 5 #seconds i believe  
+# Single source of truth for the g.Pype Router wiring: run_pipeline() below
+# builds `merger = gp.Router(input_channels=ROUTER_INPUT_CHANNELS, ...)` from
+# this exact dict, so a channel's position in every EEG_gpype LSL sample is
+# always this dict's iteration order -- reordering/renaming keys here (and
+# in run_pipeline()'s merger) is reflected automatically by
+# _router_channel_index() below instead of needing a hand-kept index list.
+# Index 11 ("hold": the decimated + z-scored theta signal held by
+# gp.Hold()) was mistaken for Smoothed Power -- that mismatch was issue #3.
+# Smoothed Power is "moving_average" (index 9), which is what
+# theta_trigger_loop's own median/MAD z-scoring expects as input.
+ROUTER_INPUT_CHANNELS = {
+    "channel_1": [0],
+    "channel_2": [1],
+    "channel_3": [2],
+    "channel_4": [3],
+    "channel_5": [4],
+    "channel_6": [5],
+    "channel_7": [6],
+    "theta_filter": [0],
+    "power": [0],
+    "moving_average": [0],
+    "theta_z": [0],
+    "hold": [0],
+    "channel_8": [7],
+}
+
+
+def _router_channel_index(input_channels: dict, port_name: str) -> int:
+    """Index of `port_name`'s first channel in the Router's flattened
+    output -- i.e. the position `sample[i]` needs in every downstream
+    EEG_gpype LSL sample. Mirrors gp.Router's own flattening: ports land in
+    dict-iteration order, each contributing len(channels) output channels.
+    """
+    idx = 0
+    for name, channels in input_channels.items():
+        if name == port_name:
+            return idx
+        idx += len(channels)
+    raise KeyError(f"{port_name!r} not in input_channels")
+
+
+THETA_CHANNEL_INDEX = _router_channel_index(ROUTER_INPUT_CHANNELS, "hold")  # Smoothed Power
+
+SONICATION_TIME = 5 #seconds i believe
 COOLDOWN_TIME = 15 #sonication time + cooldown time
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
 MU = 3.12
@@ -164,7 +207,7 @@ def listen_for_start():
             break
 
 
-def theta_sample_source(stream_name='EEG_gpype', channel_index=11, timeout=0.01):
+def theta_sample_source(stream_name='EEG_gpype', channel_index=THETA_CHANNEL_INDEX, timeout=0.01):
     """Pulls samples from the named LSL stream and yields (theta_val, ts) pairs
     for theta_trigger_loop to consume. This is the only piece of
     theta_trigger_loop that talks to LSL for its input; it's split out so
@@ -248,10 +291,6 @@ def theta_trigger_loop(sample_source=None):
 
         # clean sample → keep
         buffer.append(theta_val)
-        #theta_z =np.abs(theta_val - MU) / SIGMA
-        #ts_rel = ts - eeg_start_lsl
-        # with open(f"theta_z_values_{hash_and_test}.csv", "a") as f:
-        #     f.write(f"{ts_rel},{theta_z}\n")
        
         now = ts
         print(f"sonication_enabled={sonication_enabled}")
@@ -262,18 +301,13 @@ def theta_trigger_loop(sample_source=None):
                 eeg_trigger_outlet.push_sample(["LIFU_ON"])
                 lifu_num_outlet.push_sample([1.0])
                 NUM_SONICATIONS += 1
-                # interface.hvcontroller.turn_hv_on()
-                # time.sleep(0.3) # this causes a lot of delay no?
+    
 
-
-                #interface.txdevice.start_trigger()
                 time.sleep(SONICATION_TIME)
                 eeg_trigger_outlet.push_sample(["LIFU_OFF"])
                 lifu_num_outlet.push_sample([0.0])
-                #interface.txdevice.stop_trigger()
 
 
-                # interface.hvcontroller.turn_hv_off()
                 last_trigger_time = now
                 logger.info("Theta-triggered sonication complete.")
             except Exception as e:
@@ -314,27 +348,9 @@ def run_pipeline():
     theta_z_eq = gp.Equation("(in - 5.36) / 6.60")
 
 
-    trigger_scaling = gp.Equation("in/2")
-
-
-
 
     merger = gp.Router(
-        input_channels={
-            "channel_1": [0],
-            "channel_2": [1],
-            "channel_3": [2],
-            "channel_4": [3],
-            "channel_5": [4],
-            "channel_6": [5],
-            "channel_7": [6],
-            "theta_filter": [0],
-            "power": [0],
-            "moving_average": [0],
-            "theta_z": [0],
-            "hold": [0],
-            "channel_8": [7]
-        },
+        input_channels=ROUTER_INPUT_CHANNELS,
         output_channels=[gp.Router.ALL],
     )
 
@@ -354,9 +370,6 @@ def run_pipeline():
     p.connect(decimator, hold)
 
 
-    p.connect(bandpass, trigger_scaling)
-
-
     p.connect(source, merger["channel_1"])
     p.connect(source, merger["channel_2"])
     p.connect(source, merger["channel_3"])
@@ -369,7 +382,7 @@ def run_pipeline():
     p.connect(moving_average, merger["moving_average"])
     p.connect(hold, merger["hold"])
     p.connect(theta_z_eq, merger["theta_z"])
-    p.connect(trigger_scaling, merger["channel_8"])
+    p.connect(source, merger["channel_8"])
 
 
 
@@ -390,7 +403,7 @@ def run_pipeline():
 
 
     p.start()
-    eeg_start_lsl = local_clock()  # set global start time for LSL relative timestamps
+    eeg_start_lsl = local_clock()  # set global start time for LSL relative timestamps NOT SURE IF I NEED THIS
     logger.info(
         "g.Pype pipeline running headless (no GUI scope). "
         "lsl_visualizer.py shows all LSL streams (EEG_gpype, markers, etc.) "

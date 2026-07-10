@@ -115,149 +115,204 @@ def record_eeg_lsl():
             #print(f"Wrote EEG sample at {ts:.6f}s")
 
 
-# beamforming parameters (demo code)
-xInput = 0
-yInput = 0
-zInput = 50
+def init_hardware(
+    db_path: Path | None = None,
+    num_modules: int = 1,
+    use_external_power_supply: bool = False,
+    xInput: float = 0,
+    yInput: float = 0,
+    zInput: float = 50,
+    frequency_kHz: float = 400,
+    voltage: float = 20.0,
+    duration_msec: float = 3,
+    interval_msec: float = 10,
+) -> tuple[LIFUInterface, Solution]:
+    """
+    Brings up the OpenLIFU hardware (transducer DB lookup, beamforming math,
+    USB connection, 12V/HV power-on, TX7332 enumeration) and loads a
+    beamforming Solution focused at (xInput, yInput, zInput) mm.
 
-frequency_kHz = 400
-voltage = 20.0
-duration_msec = 3
-interval_msec = 10
-num_modules = 1
+    Only called from `if __name__ == "__main__":` below -- importing this
+    module must not touch hardware or require the device to be connected.
+    """
+    peak_to_peak_voltage = voltage * 2
+    
+    db_path = Path(r"C:\Users\jshin\Downloads\OpenLIFU-python\OpenLIFU-python\db_dvc")
+    #     db_path = Path(os.environ.get("OPENLIFU_DB_PATH", default_db_path))
+    # if not db_path.exists():
+    #     raise FileNotFoundError(f"OpenLIFU DB not found at {db_path}. Set OPENLIFU_DB_PATH.")
+    db = Database(db_path)
+    arr = db.load_transducer(f"openlifu_{num_modules}x400_evt1")
+    arr.sort_by_pin()
 
-use_external_power_supply = False
-peak_to_peak_voltage = voltage * 2
+    target = Point(position=(xInput, yInput, zInput), units="mm")
+    focus = target.get_position(units="mm")
 
-db_path = Path(r"C:\Users\jshin\Downloads\OpenLIFU-python\OpenLIFU-python\db_dvc")
-db = Database(db_path)
-arr = db.load_transducer(f"openlifu_{num_modules}x400_evt1")
-arr.sort_by_pin()
+    positions = arr.get_positions(units="mm")
+    distances = np.sqrt(np.sum((focus - positions) ** 2, axis=1)).reshape(1, -1)
 
-target = Point(position=(xInput, yInput, zInput), units="mm")
-focus = target.get_position(units="mm")
-
-positions = arr.get_positions(units="mm")
-distances = np.sqrt(np.sum((focus - positions) ** 2, axis=1)).reshape(1, -1)
-
-speed_of_sound = 1500
-tof = distances * 1e-3 / speed_of_sound
-delays = tof.max() - tof
-apodizations = np.ones((1, arr.numelements()))
-logger.info("Starting LIFU Test Script...")
-interface = LIFUInterface(ext_power_supply=use_external_power_supply)
-tx_connected, hv_connected = interface.is_device_connected()
-
-interface.hvcontroller.turn_12v_on()
-time.sleep(0.8)
-
-interface.stop_monitoring()
-del interface
-interface = LIFUInterface(ext_power_supply=False)
-
-tx_connected, hv_connected = interface.is_device_connected()
-if not tx_connected:
-    raise RuntimeError("TX not connected after 12V power-up")
-
-interface.hvcontroller.turn_hv_on()
-time.sleep(0.5)
-
-if not use_external_power_supply and not tx_connected:
-    logger.warning("TX device not connected. Attempting to turn on 12V...")
-    interface.hvcontroller.turn_hv_on()
-    time.sleep(2)
-    interface.hvcontroller.turn_12v_on()
-    time.sleep(2)
-    interface.stop_monitoring()
-    del interface
-    time.sleep(1)
-    logger.info("Reinitializing LIFU interface after powering 12V...")
+    speed_of_sound = 1500
+    tof = distances * 1e-3 / speed_of_sound
+    delays = tof.max() - tof
+    apodizations = np.ones((1, arr.numelements()))
+    logger.info("Starting LIFU Test Script...")
     interface = LIFUInterface(ext_power_supply=use_external_power_supply)
     tx_connected, hv_connected = interface.is_device_connected()
 
-if not use_external_power_supply:
-    if hv_connected:
-        logger.info(f"  HV Connected: {hv_connected}")
+    interface.hvcontroller.turn_12v_on()
+    time.sleep(0.8)
+
+    interface.stop_monitoring()
+    del interface
+    interface = LIFUInterface(ext_power_supply=False)
+
+    tx_connected, hv_connected = interface.is_device_connected()
+    if not tx_connected:
+        raise RuntimeError("TX not connected after 12V power-up")
+
+    interface.hvcontroller.turn_hv_on()
+    time.sleep(0.5)
+
+    if not use_external_power_supply and not tx_connected:
+        logger.warning("TX device not connected. Attempting to turn on 12V...")
+        interface.hvcontroller.turn_hv_on()
+        time.sleep(2)
+        interface.hvcontroller.turn_12v_on()
+        time.sleep(2)
+        interface.stop_monitoring()
+        del interface
+        time.sleep(1)
+        logger.info("Reinitializing LIFU interface after powering 12V...")
+        interface = LIFUInterface(ext_power_supply=use_external_power_supply)
+        tx_connected, hv_connected = interface.is_device_connected()
+
+    if not use_external_power_supply:
+        if hv_connected:
+            logger.info(f"  HV Connected: {hv_connected}")
+        else:
+            logger.error("HV NOT fully connected.")
+            sys.exit(1)
     else:
-        logger.error("HV NOT fully connected.")
+        logger.info("Using external power supply")
+
+    if tx_connected:
+        logger.info(f"  TX Connected: {tx_connected}")
+        logger.info("LIFU Device fully connected.")
+    else:
+        logger.error("TX NOT fully connected.")
         sys.exit(1)
-else:
-    logger.info("Using external power supply")
 
-if tx_connected:
-    logger.info(f"  TX Connected: {tx_connected}")
-    logger.info("LIFU Device fully connected.")
-else:
-    logger.error("TX NOT fully connected.")
-    sys.exit(1)
+    if not interface.txdevice.ping():
+        logger.error("Failed to ping the transmitter device.")
+        sys.exit(1)
 
-if not interface.txdevice.ping():
-    logger.error("Failed to ping the transmitter device.")
-    sys.exit(1)
+    if not use_external_power_supply and not interface.hvcontroller.ping():
+        logger.error("Failed to ping the console device.")
+        sys.exit(1)
 
-if not use_external_power_supply and not interface.hvcontroller.ping():
-    logger.error("Failed to ping the console device.")
-    sys.exit(1)
+    if not use_external_power_supply:
+        try:
+            console_firmware_version = interface.hvcontroller.get_version()
+            logger.info(f"Console Firmware Version: {console_firmware_version}")
+        except Exception as e:
+            logger.error(f"Error querying console firmware version: {e}")
 
-if not use_external_power_supply:
     try:
-        console_firmware_version = interface.hvcontroller.get_version()
-        logger.info(f"Console Firmware Version: {console_firmware_version}")
+        tx_firmware_version = interface.txdevice.get_version()
+        logger.info(f"TX Firmware Version: {tx_firmware_version}")
     except Exception as e:
-        logger.error(f"Error querying console firmware version: {e}")
+        logger.error(f"Error querying TX firmware version: {e}")
 
-try:
-    tx_firmware_version = interface.txdevice.get_version()
-    logger.info(f"TX Firmware Version: {tx_firmware_version}")
-except Exception as e:
-    logger.error(f"Error querying TX firmware version: {e}")
+    logger.info("Enumerate TX7332 chips")
+    num_tx_devices = interface.txdevice.enum_tx7332_devices()
+    if num_tx_devices == 0:
+        raise ValueError("No TX7332 devices found.")
+    elif num_tx_devices == num_modules * 2:
+        logger.info(f"Number of TX7332 devices found: {num_tx_devices}")
+        numelements = 32 * num_tx_devices
+    else:
+        raise Exception(f"Number of TX7332 devices found: {num_tx_devices} != 2x{num_modules}")
 
-logger.info("Enumerate TX7332 chips")
-num_tx_devices = interface.txdevice.enum_tx7332_devices()
-if num_tx_devices == 0:
-    raise ValueError("No TX7332 devices found.")
-elif num_tx_devices == num_modules * 2:
-    logger.info(f"Number of TX7332 devices found: {num_tx_devices}")
-    numelements = 32 * num_tx_devices
-else:
-    raise Exception(f"Number of TX7332 devices found: {num_tx_devices} != 2x{num_modules}")
+    logger.info(f'Apodizations: {apodizations}')
+    logger.info(f'Delays: {delays}')
 
-logger.info(f'Apodizations: {apodizations}')
-logger.info(f'Delays: {delays}')
+    pulse = Pulse(frequency=frequency_kHz * 1e3, duration=duration_msec * 1e-3)
 
-pulse = Pulse(frequency=frequency_kHz * 1e3, duration=duration_msec * 1e-3)
+    sequence = Sequence(
+        pulse_interval=interval_msec * 1e-3,
+        pulse_count=int(60 / (interval_msec * 1e-3)),
+        pulse_train_interval=0,
+        pulse_train_count=1
+    )
 
-sequence = Sequence(
-    pulse_interval=interval_msec * 1e-3,
-    pulse_count=int(60 / (interval_msec * 1e-3)),
-    pulse_train_interval=0,
-    pulse_train_count=1
-)
+    pin_order = np.argsort([el.pin for el in arr.elements])
 
-pin_order = np.argsort([el.pin for el in arr.elements])
+    solution = Solution(
+        delays=delays[:, pin_order],
+        apodizations=apodizations[:, pin_order],
+        transducer=arr,
+        pulse=pulse,
+        voltage=voltage,
+        sequence=sequence
+    )
 
-solution = Solution(
-    delays=delays[:, pin_order],
-    apodizations=apodizations[:, pin_order],
-    transducer=arr,
-    pulse=pulse,
-    voltage=voltage,
-    sequence=sequence
-)
+    interface.set_solution(
+        solution=solution,
+        profile_index=1,
+        profile_increment=False,
+        trigger_mode="continuous"
+    )
 
-interface.set_solution(
-    solution=solution,
-    profile_index=1,
-    profile_increment=False,
-    trigger_mode="continuous"
-)
-
-logger.info("Beamforming solution loaded.")
+    logger.info("Beamforming solution loaded.")
+    return interface, solution
 
 
 # theta sonication loop (eeg + demo code)
 
-SONICATION_TIME = 5 #seconds i believe  
+# Single source of truth for the g.Pype Router wiring: run_pipeline() below
+# builds `merger = gp.Router(input_channels=ROUTER_INPUT_CHANNELS, ...)` from
+# this exact dict, so a channel's position in every EEG_gpype LSL sample is
+# always this dict's iteration order -- reordering/renaming keys here (and
+# in run_pipeline()'s merger) is reflected automatically by
+# _router_channel_index() below instead of needing a hand-kept index list.
+# Index 11 ("hold": the decimated + z-scored theta signal held by
+# gp.Hold()) was mistaken for Smoothed Power -- that mismatch was issue #3.
+# Smoothed Power is "moving_average" (index 9), which is what
+# theta_trigger_loop's own median/MAD z-scoring expects as input.
+ROUTER_INPUT_CHANNELS = {
+    "channel_1": [0],
+    "channel_2": [1],
+    "channel_3": [2],
+    "channel_4": [3],
+    "channel_5": [4],
+    "channel_6": [5],
+    "channel_7": [6],
+    "theta_filter": [0],
+    "power": [0],
+    "moving_average": [0],
+    "theta_z": [0],
+    "hold": [0],
+    "channel_8": [7],
+}
+
+
+def _router_channel_index(input_channels: dict, port_name: str) -> int:
+    """Index of `port_name`'s first channel in the Router's flattened
+    output -- i.e. the position `sample[i]` needs in every downstream
+    EEG_gpype LSL sample. Mirrors gp.Router's own flattening: ports land in
+    dict-iteration order, each contributing len(channels) output channels.
+    """
+    idx = 0
+    for name, channels in input_channels.items():
+        if name == port_name:
+            return idx
+        idx += len(channels)
+    raise KeyError(f"{port_name!r} not in input_channels")
+
+
+THETA_CHANNEL_INDEX = _router_channel_index(ROUTER_INPUT_CHANNELS, "moving_average")  # Smoothed Power
+
+SONICATION_TIME = 5 #seconds i believe
 COOLDOWN_TIME = 7 #sonication time + cooldown time 
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
 MU = 2.32
@@ -279,7 +334,7 @@ def listen_for_start():
             sonication_enabled = True
             break
 
-def theta_trigger_loop():
+def theta_trigger_loop(interface):
     logger.info("Waiting for theta LSL stream (type='EEG')...")
     streams = resolve_byprop('name', 'EEG_gpype', timeout=30)
     if not streams:
@@ -299,7 +354,7 @@ def theta_trigger_loop():
         sample, ts = inlet.pull_sample(timeout=1.0)
         if sample is None:
             break
-        theta_val = sample[11]  # Smoothed Power channel
+        theta_val = sample[THETA_CHANNEL_INDEX]  # Smoothed Power channel
         if last_theta_val is not None and theta_val == last_theta_val:
             continue
         last_theta_val = theta_val
@@ -385,21 +440,7 @@ def run_pipeline():
 
 
     merger = gp.Router(
-        input_channels={
-            "channel_1": [0],
-            "channel_2": [1],
-            "channel_3": [2],
-            "channel_4": [3],
-            "channel_5": [4],
-            "channel_6": [5],
-            "channel_7": [6],
-            "theta_filter": [0],
-            "power": [0],
-            "moving_average": [0],
-            "theta_z": [0],
-            "hold": [0],
-            "channel_8": [7]
-        },
+        input_channels=ROUTER_INPUT_CHANNELS,
         output_channels=[gp.Router.ALL],
     )
 
@@ -476,13 +517,21 @@ def run_pipeline():
     # p.stop()
 
 if __name__ == "__main__":
+    interface = None
+    theta_thread = None
+    lifu_record_thread = None
     try:
+        # Bring up hardware (USB connect, 12V/HV power-on, TX7332 enumeration,
+        # beamforming solution) only when actually running this script --
+        # importing this module elsewhere (e.g. for testing) never reaches here.
+        interface, solution = init_hardware()
+
         # Start thread to listen for experiment start trigger from PsychoPy
         listen_for_psychopy_thread = threading.Thread(target=listen_for_start, daemon=True)
         listen_for_psychopy_thread.start()
 
         # Start theta closed-loop thread
-        theta_thread = threading.Thread(target=theta_trigger_loop, daemon=False)
+        theta_thread = threading.Thread(target=theta_trigger_loop, args=(interface,), daemon=False)
         theta_thread.start()
 
         # Start LIFU marker recording thread
@@ -500,10 +549,13 @@ if __name__ == "__main__":
             # ALWAYS stop threads when pipeline stops
             RUNNING = False
 
-            try:
-                interface.hvcontroller.turn_hv_off()
-            except:
-                pass
+            if interface is not None:
+                try:
+                    interface.hvcontroller.turn_hv_off()
+                except Exception:
+                    pass
 
-            theta_thread.join()
-            lifu_record_thread.join()  
+            if theta_thread is not None:
+                theta_thread.join()
+            if lifu_record_thread is not None:
+                lifu_record_thread.join()
