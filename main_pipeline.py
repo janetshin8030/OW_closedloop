@@ -35,7 +35,7 @@ from openlifu.plan.solution import Solution
 
 
 # name convention
-name_and_trial = "gui"
+name_and_trial = "no_run"
 
 # all CSV output goes here
 CSV_DIR = Path("csv_data")
@@ -137,6 +137,13 @@ RUNNING = True
 
 # Set OW_HARDWARE_ENABLED=1 for NO GUI (python sonication)
 HARDWARE_ENABLED = bool(os.environ.get("OW_HARDWARE_ENABLED"))
+
+# Set OW_SHAM_RUN=1 for a sham (placebo) run: every thread, LSL stream, CSV/
+# XDF recording, and LIFU_ON/OFF marker still runs exactly as normal -- only
+# the two places that would actually cause the transducer to fire are
+# skipped (see their call sites below), so the LIFU hardware never
+# sonicates.
+SHAM_RUN = bool(os.environ.get("OW_SHAM_RUN"))
 
 
 def _connect_labrecorder_rcs(timeout: float) -> socket.socket | None:
@@ -345,16 +352,15 @@ def start_psychopy() -> subprocess.Popen | None:
 # hardware firing off of the PsychoPy_numeric LSL markers this script emits
 # (see theta_trigger_loop). Slicer must already be running with the module
 # open, device connected, and an approved solution sent to hardware -- this
-# only presses the Run button, it doesn't do that setup. Set
-# OW_NO_SLICER_AUTORUN=1 to skip this and click Run by hand instead.
+# only presses the Run button, it doesn't do that setup. Skipped whenever
+# SHAM_RUN is set (see __main__) -- without Slicer's solution ever being
+# "Run", it stays unarmed, so the LIFU_ON/OFF markers this script still
+# emits normally never cause the transducer to fire.
 SLICER_RUN_HOST = "127.0.0.1"
 SLICER_RUN_PORT = int(os.environ.get("OW_SLICER_RUN_PORT", "18946"))
 
 
 def trigger_slicer_run(timeout: float = 5.0) -> bool:
-    if os.environ.get("OW_NO_SLICER_AUTORUN"):
-        logger.info("OW_NO_SLICER_AUTORUN set; not auto-triggering the Slicer Run button.")
-        return False
     try:
         with socket.create_connection((SLICER_RUN_HOST, SLICER_RUN_PORT), timeout=timeout) as sock:
             sock.sendall(b"run\n")
@@ -963,7 +969,13 @@ if __name__ == "__main__":
     lab_recorder_proc = None
     lab_recorder_started = False
     try:
-        if HARDWARE_ENABLED:
+        if HARDWARE_ENABLED and SHAM_RUN:
+            logger.info(
+                "OW_SHAM_RUN set; skipping init_hardware() -- interface stays None, "
+                "so theta_trigger_loop runs its normal dry-run (markers emitted, no "
+                "hardware calls) and the LIFU will not sonicate this run."
+            )
+        elif HARDWARE_ENABLED:
             # Bring up hardware (USB connect, 12V/HV power-on, TX7332 enumeration,
             # beamforming solution) only when actually running this script with
             # OW_HARDWARE_ENABLED set -- importing this module (e.g. for tests)
@@ -1009,8 +1021,17 @@ if __name__ == "__main__":
         # Press Run in the Slicer GUI for the user, if that's the hardware
         # path being used (see trigger_slicer_run()'s docstring). Skipped
         # entirely when HARDWARE_ENABLED, since then this script fires the
-        # hardware directly instead of relying on Slicer's Run button.
-        if not HARDWARE_ENABLED:
+        # hardware directly instead of relying on Slicer's Run button. Also
+        # skipped when SHAM_RUN is set -- Slicer's solution never gets
+        # "Run", so it stays unarmed and the LIFU will not sonicate.
+        if HARDWARE_ENABLED:
+            pass
+        elif SHAM_RUN:
+            logger.info(
+                "OW_SHAM_RUN set; skipping the Slicer auto-run trigger -- Slicer "
+                "stays unarmed, so the LIFU will not sonicate this run."
+            )
+        else:
             trigger_slicer_run()
 
 
