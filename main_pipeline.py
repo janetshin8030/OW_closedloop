@@ -9,7 +9,6 @@ import subprocess
 import sys
 import threading
 import time
-import csv
 from pathlib import Path
 
 
@@ -40,10 +39,6 @@ from openlifu.plan.solution import Solution
 
 # name convention
 name_and_trial = "no_run"
-
-# all CSV output goes here
-CSV_DIR = Path("csv_data")
-CSV_DIR.mkdir(exist_ok=True)
 
 # all XDF output goes here (written by LabRecorder, see start_lab_recorder())
 XDF_DIR = Path("xdf_data")
@@ -311,10 +306,9 @@ def stop_lab_recorder(proc: subprocess.Popen | None, started: bool) -> None:
 # ============================================================
 
 # PsychoPy task automation. Defaults to the 2-back task since that's the one
-# paired with LIFU triggering (see the lifu_markers_1_2back_*.csv files in
-# csv_data/). Set OW_PSYCHOPY_SCRIPT to point at a different Builder-exported
-# script (e.g. stroop/stroop_lastrun.py) instead, or OW_NO_PSYCHOPY=1 to skip
-# auto-launching it and start the task by hand.
+# paired with LIFU triggering. Set OW_PSYCHOPY_SCRIPT to point at a different
+# Builder-exported script (e.g. stroop/stroop_lastrun.py) instead, or
+# OW_NO_PSYCHOPY=1 to skip auto-launching it and start the task by hand.
 #
 # PsychoPy lives in its own Python install, separate from this script's
 # interpreter (which doesn't have the `psychopy` package) -- so it can't be
@@ -430,82 +424,6 @@ def trigger_slicer_run(timeout: float = 5.0) -> bool:
             SLICER_RUN_HOST, SLICER_RUN_PORT, e,
         )
         return False
-
-
-# ============================================================
-# CSV recording threads
-# ============================================================
-
-#saving markers to csv
-def record_lifu_numeric():
-    logger.info("Waiting for LIFU_numeric stream...")
-    streams = resolve_byprop("name", "EEG_LIFU_events", timeout=30)
-    if not streams:
-        logger.warning("No LIFU_numeric stream found.")
-        return
-
-
-    inlet = StreamInlet(streams[0])
-    logger.info("Connected to LIFU_numeric stream.")
-
-
-    with open(CSV_DIR / f"lifu_markers_1_{name_and_trial}.csv", "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Time", "marker", "LSL_timestamp"])  # Header
-
-
-        while RUNNING:
-            sample, ts= inlet.pull_sample(timeout=0.1)
-            if sample is None:
-                continue
-            if sample:
-                writer.writerow([ts, sample[0], ts])
-                f.flush()              # <--- forces Python to write
-                os.fsync(f.fileno())   # <--- forces OS to write
-                logger.info("Wrote marker: %s", sample[0])
-
-
-
-
-def record_eeg_lsl():
-    """
-    Record EEG data from LSL to CSV for offline processing.
-    This is separate from the g.Pype pipeline's own CSV writing.
-    """
-    logger.info("Waiting for EEG LSL stream...")
-    streams = resolve_byprop('type', 'EEG', timeout=30)
-    if not streams:
-        logger.warning("No EEG LSL stream found.")
-        return
-
-
-    inlet = StreamInlet(streams[0])
-    logger.info("Connected to EEG LSL stream.")
-
-
-    with open(CSV_DIR / f"scope_eeg_{name_and_trial}.csv", "w", newline="") as f:
-        writer = csv.writer(f)
-        header_written = False
-
-
-        while RUNNING:
-            sample, ts = inlet.pull_sample(timeout=0.01)
-            if sample is None:
-                continue
-
-
-            if not header_written:
-                header = ["Time"] + [f"Ch{i:02d}" for i in range(1, len(sample)+1)]
-                writer.writerow(header)
-                header_written = True
-
-
-            writer.writerow([ts] + sample)
-            f.flush()
-            os.fsync(f.fileno())
-            #logger.debug("Wrote EEG sample at %.6fs", ts)
-
-
 
 
 # ============================================================
@@ -925,8 +843,6 @@ def run_pipeline():
 
 
     sender = gp.LSLSender(stream_name = "EEG_gpype")  # default name/type; we’ll resolve by type='EEG'
-    online_writer = gp.CsvWriter(file_name=str(CSV_DIR / f"thetaEEG_gpype_{name_and_trial}.csv"))
-    offline_writer = gp.CsvWriter(file_name=str(CSV_DIR / f"thetaEEG_full_{name_and_trial}.csv"))
 
 
     p.connect(source, notch60)
@@ -957,8 +873,6 @@ def run_pipeline():
 
 
     p.connect(merger, sender)
-    p.connect(merger, online_writer)
-    p.connect(source, offline_writer)
 
 
     visualizer_proc = None
@@ -1003,8 +917,6 @@ def main() -> int:
     RUNNING = True
     interface = None
     theta_thread = None
-    lifu_record_thread = None
-    eeg_record_thread = None
     psychopy_proc = None
     lab_recorder_proc = None
     lab_recorder_started = False
@@ -1036,16 +948,6 @@ def main() -> int:
             target=theta_trigger_loop, kwargs={"interface": interface}, daemon=False
         )
         theta_thread.start()
-
-
-        # Start LIFU marker recording thread
-        lifu_record_thread = threading.Thread(target=record_lifu_numeric, daemon=False)
-        lifu_record_thread.start()
-
-
-        # Start EEG recording thread
-        eeg_record_thread = threading.Thread(target=record_eeg_lsl, daemon=False)
-        eeg_record_thread.start()
 
 
         # Start the PsychoPy task now that the marker/EEG plumbing it talks
@@ -1085,12 +987,11 @@ def main() -> int:
 
     finally:
             # ALWAYS stop everything when the pipeline stops (including on
-            # Ctrl+C): PsychoPy, LabRecorder, LIFU hardware, and every
-            # background thread (theta, LIFU-marker CSV, EEG CSV). The g.Pype
-            # pipeline and lsl_visualizer.py are already stopped inside
-            # run_pipeline()'s own finally block. Each step below runs via
-            # _cleanup_step so one failing/interrupted step (e.g. another
-            # Ctrl+C landing mid-join) can't skip the rest.
+            # Ctrl+C): PsychoPy, LabRecorder, LIFU hardware, and the theta
+            # thread. The g.Pype pipeline and lsl_visualizer.py are already
+            # stopped inside run_pipeline()'s own finally block. Each step
+            # below runs via _cleanup_step so one failing/interrupted step
+            # (e.g. another Ctrl+C landing mid-join) can't skip the rest.
             RUNNING = False
             _cleanup_step("stop PsychoPy", stop_psychopy, psychopy_proc)
             _cleanup_step("stop LabRecorder", stop_lab_recorder, lab_recorder_proc, lab_recorder_started)
@@ -1098,10 +999,6 @@ def main() -> int:
                 _cleanup_step("turn off LIFU HV", interface.hvcontroller.turn_hv_off)
             if theta_thread is not None:
                 _cleanup_step("join theta thread", theta_thread.join)
-            if lifu_record_thread is not None:
-                _cleanup_step("join LIFU-marker thread", lifu_record_thread.join)
-            if eeg_record_thread is not None:
-                _cleanup_step("join EEG-CSV thread", eeg_record_thread.join)
 
     return 0
 
