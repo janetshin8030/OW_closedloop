@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2026.1.3),
-    on July 10, 2026, at 11:21
+    on July 12, 2026, at 16:18
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -52,10 +52,6 @@ expInfo = {
     'expVersion|hid': expVersion,
     'psychopyVersion|hid': psychopyVersion,
 }
-# pre-fill participant from main_pipeline.py's start_psychopy() so the info
-# dialog below doesn't need it typed by hand; no-op for a manual launch
-if os.environ.get('OW_PARTICIPANT'):
-    expInfo['participant'] = os.environ['OW_PARTICIPANT']
 
 # --- Define some variables which will change depending on pilot mode ---
 '''
@@ -572,13 +568,6 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 # a response ends the routine
                 continueRoutine = False
         
-        # check for a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
-        # pushes -1.0 on PsychoPy_numeric so this task saves its data before
-        # exiting, same as pressing Escape below)
-        if lifu_inlet is not None:
-            _stop_sample, _ = lifu_inlet.pull_sample(timeout=0.0)
-            if _stop_sample is not None and _stop_sample[0] == -1.0:
-                thisExp.status = FINISHED
         # check for quit (typically the Esc key)
         if defaultKeyboard.getKeys(keyList=["escape"]):
             thisExp.status = FINISHED
@@ -706,13 +695,6 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 fixation_1.status = FINISHED
                 fixation_1.setAutoDraw(False)
         
-        # check for a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
-        # pushes -1.0 on PsychoPy_numeric so this task saves its data before
-        # exiting, same as pressing Escape below)
-        if lifu_inlet is not None:
-            _stop_sample, _ = lifu_inlet.pull_sample(timeout=0.0)
-            if _stop_sample is not None and _stop_sample[0] == -1.0:
-                thisExp.status = FINISHED
         # check for quit (typically the Esc key)
         if defaultKeyboard.getKeys(keyList=["escape"]):
             thisExp.status = FINISHED
@@ -1002,16 +984,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # Run 'Each Frame' code from code_2
             if lifu_inlet is not None:
                 sample, ts = lifu_inlet.pull_sample(timeout=0.0)
-
+            
                 if sample is not None:
                     last_lifu_event = sample[0]
-                    # a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
-                    # pushes -1.0 on PsychoPy_numeric) so this task saves its data
-                    # before exiting, same as pressing Escape below
                     if sample[0] == -1.0:
+                        marker_outlet.push_sample(["STOP_EXPERIMENT"])
                         thisExp.status = FINISHED
-
-
+            
+            
             # check for quit (typically the Esc key)
             if defaultKeyboard.getKeys(keyList=["escape"]):
                 thisExp.status = FINISHED
@@ -1173,14 +1153,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 # update status
                 thank_you.status = FINISHED
                 thank_you.setAutoDraw(False)
-        
-        # check for a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
-        # pushes -1.0 on PsychoPy_numeric so this task saves its data before
-        # exiting, same as pressing Escape below)
+        # Run 'Each Frame' code from code
         if lifu_inlet is not None:
             _stop_sample, _ = lifu_inlet.pull_sample(timeout=0.0)
             if _stop_sample is not None and _stop_sample[0] == -1.0:
+                marker_outlet.push_sample(["STOP_EXPERIMENT"])
                 thisExp.status = FINISHED
+        
         # check for quit (typically the Esc key)
         if defaultKeyboard.getKeys(keyList=["escape"]):
             thisExp.status = FINISHED
@@ -1231,6 +1210,9 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     else:
         routineTimer.addTime(-3.000000)
     thisExp.nextEntry()
+    # Run 'End Experiment' code from code_2
+    marker_outlet.push_sample(["STOP_EXPERIMENT"])
+    
     
     # mark experiment as finished
     endExperiment(thisExp, win=win)
@@ -1319,19 +1301,11 @@ if __name__ == '__main__':
     logFile = setupLogging(filename=thisExp.dataFileName)
     win = setupWindow(expInfo=expInfo)
     setupDevices(expInfo=expInfo, thisExp=thisExp, win=win)
-    try:
-        run(
-            expInfo=expInfo,
-            thisExp=thisExp,
-            win=win,
-            globalClock='float'
-        )
-    except KeyboardInterrupt:
-        # belt-and-suspenders: the stop-signal checks in run()'s frame loops
-        # are the primary way main_pipeline.py's stop_psychopy() gets this
-        # task to exit gracefully, but if a raw Ctrl+C ever reaches this
-        # process directly, still fall through to saveData() below instead
-        # of losing this participant's data to an unhandled exception.
-        pass
+    run(
+        expInfo=expInfo, 
+        thisExp=thisExp, 
+        win=win,
+        globalClock='float'
+    )
     saveData(thisExp=thisExp)
     quit(thisExp=thisExp, win=win)

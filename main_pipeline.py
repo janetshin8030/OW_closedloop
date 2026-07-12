@@ -722,18 +722,23 @@ sonication_enabled = False
 
 
 
-def listen_for_start():
+def listen_for_start_stop():
     global sonication_enabled
     inlet = StreamInlet(resolve_byprop("name", "PsychoPyMarkers")[0])
 
 
-    while True:
+    while RUNNING:
         sample, ts = inlet.pull_sample(timeout=0.1)
-        if sample and sample[0] == "START_EXPERIMENT":
+        if sample is None:
+            continue
+        if sample[0] == "START_EXPERIMENT":
             logger.info("Experiment started — enabling LIFU.")
             eeg_trigger_outlet.push_sample(["START_EXPERIMENT_RECEIVED"])
             sonication_enabled = True
-            break
+        elif sample[0] == "STOP_EXPERIMENT":
+            logger.info("Experiment ended — disabling LIFU.")
+            eeg_trigger_outlet.push_sample(["STOP_EXPERIMENT_RECEIVED"])
+            sonication_enabled = False
 
 
 def theta_sample_source(stream_name='EEG_gpype', channel_index=THETA_CHANNEL_INDEX, timeout=0.01):
@@ -1026,8 +1031,8 @@ def main() -> int:
                 logger.error("Hardware init failed: %s", e)
                 return 1
 
-        # Start thread to listen for experiment start trigger from PsychoPy
-        listen_for_psychopy_thread = threading.Thread(target=listen_for_start, daemon=True)
+        # Start thread to listen for experiment start/stop triggers from PsychoPy
+        listen_for_psychopy_thread = threading.Thread(target=listen_for_start_stop, daemon=True)
         listen_for_psychopy_thread.start()
 
 

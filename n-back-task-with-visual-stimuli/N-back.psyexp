@@ -160,6 +160,23 @@
         <Param val="" valType="code" updates="None" name="validator"/>
         <Param val="" valType="code" updates="constant" name="wrapWidth"/>
       </TextComponent>
+      <CodeComponent name="code_3" plugin="None">
+        <Param val="" valType="extendedCode" updates="constant" name="Before Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="Before JS Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="Begin Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="Begin JS Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="Begin JS Routine"/>
+        <Param val="" valType="extendedCode" updates="constant" name="Begin Routine"/>
+        <Param val="Auto-&gt;JS" valType="str" updates="None" name="Code Type"/>
+        <Param val="if lifu_inlet is not None:&amp;#10;    _stop_sample, _ = lifu_inlet.pull_sample(timeout=0.0)&amp;#10;    if _stop_sample is not None and _stop_sample[0] == -1.0:&amp;#10;        marker_outlet.push_sample([&quot;STOP_EXPERIMENT&quot;])&amp;#10;        thisExp.status = FINISHED" valType="extendedCode" updates="constant" name="Each Frame"/>
+        <Param val="if ((lifu_inlet !== null)) {&amp;#10;    [_stop_sample, _] = lifu_inlet.pull_sample({&quot;timeout&quot;: 0.0});&amp;#10;    if (((_stop_sample !== null) &amp;&amp; (_stop_sample[0] === (- 1.0)))) {&amp;#10;        marker_outlet.push_sample([&quot;STOP_EXPERIMENT&quot;]);&amp;#10;        psychoJS.experiment.status = PsychoJS.Status.FINISHED;&amp;#10;    }&amp;#10;}&amp;#10;" valType="extendedCode" updates="constant" name="Each JS Frame"/>
+        <Param val="" valType="extendedCode" updates="constant" name="End Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="End JS Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="End JS Routine"/>
+        <Param val="" valType="extendedCode" updates="constant" name="End Routine"/>
+        <Param val="False" valType="bool" updates="None" name="disabled"/>
+        <Param val="code_3" valType="code" updates="None" name="name"/>
+      </CodeComponent>
     </Routine>
     <Routine name="End">
       <RoutineSettingsComponent name="End" plugin="None">
@@ -205,6 +222,23 @@
         <Param val="" valType="code" updates="None" name="validator"/>
         <Param val="" valType="code" updates="constant" name="wrapWidth"/>
       </TextComponent>
+      <CodeComponent name="code" plugin="None">
+        <Param val="" valType="extendedCode" updates="constant" name="Before Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="Before JS Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="Begin Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="Begin JS Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="Begin JS Routine"/>
+        <Param val="" valType="extendedCode" updates="constant" name="Begin Routine"/>
+        <Param val="Auto-&gt;JS" valType="str" updates="None" name="Code Type"/>
+        <Param val="if lifu_inlet is not None:&amp;#10;    _stop_sample, _ = lifu_inlet.pull_sample(timeout=0.0)&amp;#10;    if _stop_sample is not None and _stop_sample[0] == -1.0:&amp;#10;        marker_outlet.push_sample([&quot;STOP_EXPERIMENT&quot;])&amp;#10;        thisExp.status = FINISHED" valType="extendedCode" updates="constant" name="Each Frame"/>
+        <Param val="if ((lifu_inlet !== null)) {&amp;#10;    [_stop_sample, _] = lifu_inlet.pull_sample({&quot;timeout&quot;: 0.0});&amp;#10;    if (((_stop_sample !== null) &amp;&amp; (_stop_sample[0] === (- 1.0)))) {&amp;#10;        marker_outlet.push_sample([&quot;STOP_EXPERIMENT&quot;]);&amp;#10;        psychoJS.experiment.status = PsychoJS.Status.FINISHED;&amp;#10;    }&amp;#10;}&amp;#10;" valType="extendedCode" updates="constant" name="Each JS Frame"/>
+        <Param val="" valType="extendedCode" updates="constant" name="End Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="End JS Experiment"/>
+        <Param val="" valType="extendedCode" updates="constant" name="End JS Routine"/>
+        <Param val="" valType="extendedCode" updates="constant" name="End Routine"/>
+        <Param val="False" valType="bool" updates="None" name="disabled"/>
+        <Param val="code" valType="code" updates="None" name="name"/>
+      </CodeComponent>
     </Routine>
     <Routine name="N_back_1_Trial">
       <RoutineSettingsComponent name="N_back_1_Trial" plugin="None">
@@ -523,10 +557,10 @@
         <Param val="import {local_clock} from 'pylsl';&amp;#10;last_lifu_event = null;&amp;#10;last_lifu_time = local_clock();&amp;#10;marker_outlet.push_sample([&quot;START_EXPERIMENT&quot;]);&amp;#10;" valType="extendedCode" updates="constant" name="Begin JS Routine"/>
         <Param val="from pylsl import local_clock&amp;#10;last_lifu_event = None&amp;#10;last_lifu_time = local_clock() &amp;#10;marker_outlet.push_sample([&quot;START_EXPERIMENT&quot;])&amp;#10;" valType="extendedCode" updates="constant" name="Begin Routine"/>
         <Param val="Auto-&gt;JS" valType="str" updates="None" name="Code Type"/>
-        <Param val="if lifu_inlet is not None:&amp;#10;    sample, ts = lifu_inlet.pull_sample(timeout=0.0)&amp;#10;&amp;#10;    if sample is not None:&amp;#10;        last_lifu_event = sample[0]&amp;#10;" valType="extendedCode" updates="constant" name="Each Frame"/>
-        <Param val="if ((lifu_inlet !== null)) {&amp;#10;    [sample, ts] = lifu_inlet.pull_sample({&quot;timeout&quot;: 0.0});&amp;#10;    if ((sample !== null)) {&amp;#10;        last_lifu_event = sample[0];&amp;#10;    }&amp;#10;}&amp;#10;" valType="extendedCode" updates="constant" name="Each JS Frame"/>
-        <Param val="" valType="extendedCode" updates="constant" name="End Experiment"/>
-        <Param val="" valType="extendedCode" updates="constant" name="End JS Experiment"/>
+        <Param val="if lifu_inlet is not None:&amp;#10;    sample, ts = lifu_inlet.pull_sample(timeout=0.0)&amp;#10;&amp;#10;    if sample is not None:&amp;#10;        last_lifu_event = sample[0]&amp;#10;        if sample[0] == -1.0:&amp;#10;            marker_outlet.push_sample([&quot;STOP_EXPERIMENT&quot;])&amp;#10;            thisExp.status = FINISHED&amp;#10;" valType="extendedCode" updates="constant" name="Each Frame"/>
+        <Param val="if ((lifu_inlet !== null)) {&amp;#10;    [sample, ts] = lifu_inlet.pull_sample({&quot;timeout&quot;: 0.0});&amp;#10;    if ((sample !== null)) {&amp;#10;        last_lifu_event = sample[0];&amp;#10;        if ((sample[0] === (- 1.0))) {&amp;#10;            marker_outlet.push_sample([&quot;STOP_EXPERIMENT&quot;]);&amp;#10;            psychoJS.experiment.status = PsychoJS.Status.FINISHED;&amp;#10;        }&amp;#10;    }&amp;#10;}&amp;#10;" valType="extendedCode" updates="constant" name="Each JS Frame"/>
+        <Param val="marker_outlet.push_sample([&quot;STOP_EXPERIMENT&quot;])&amp;#10;" valType="extendedCode" updates="constant" name="End Experiment"/>
+        <Param val="marker_outlet.push_sample([&quot;STOP_EXPERIMENT&quot;]);&amp;#10;" valType="extendedCode" updates="constant" name="End JS Experiment"/>
         <Param val="psychoJS.experiment.addData(&quot;LIFU_marker&quot;, last_lifu_event);&amp;#10;psychoJS.experiment.addData(&quot;LSL_Time&quot;, last_lifu_time);&amp;#10;" valType="extendedCode" updates="constant" name="End JS Routine"/>
         <Param val="thisExp.addData('LIFU_marker', last_lifu_event)&amp;#10;thisExp.addData('LSL_Time', last_lifu_time)" valType="extendedCode" updates="constant" name="End Routine"/>
         <Param val="False" valType="bool" updates="None" name="disabled"/>
