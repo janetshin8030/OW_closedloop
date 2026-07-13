@@ -49,7 +49,7 @@ into it). The four required streams it configures:
 
 | Stream name        | Type    | Emitted by                                                                                                                            |
 |--------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------|
-| `EEG_gpype`        | (data)  | `gp.LSLSender` in `run_pipeline` — 13 channels: raw 1–8 + theta filter, power, smoothed power, z-score, decimated power, trigger      |
+| `EEG_gpype`        | (data)  | `gp.LSLSender` in `build_pipeline` — 13 channels: raw 1–8 + theta filter, power, smoothed power, z-score, decimated power, trigger      |
 | `EEG_LIFU_events`  | Markers | `StreamOutlet` at the top of the script — `LIFU_ON` / `LIFU_OFF` / `collecting_baseline` / `START_EXPERIMENT_RECEIVED`                |
 | `PsychoPy_numeric` | Markers | `StreamOutlet` at the top of the script — `1.0` / `0.0` numeric ticks matching `LIFU_ON` / `LIFU_OFF`                                 |
 | `PsychoPyMarkers`  | Markers | PsychoPy task itself (e.g. `START_EXPERIMENT`, trial events)                                                                          |
@@ -86,18 +86,21 @@ LIFU device never sonicates.
    click OK to open the task window as usual. Set `OW_PSYCHOPY_SCRIPT` to
    point at `stroop/stroop_lastrun.py` instead, or
    `OW_NO_PSYCHOPY=1` to start the task by hand.
-3. **LabRecorder launches last**, once everything above is already under way,
-   via `start_lab_recorder()`: it attaches to an already-running LabRecorder
-   or launches `LabRecorder.exe`, then over the remote-control socket sends
-   `update`, `select all`, a `filename` command (participant/session/task set
-   from `name_and_trial` / `OW_SESSION`), and `start`. `EEG_gpype` and
-   `PsychoPyMarkers` typically don't exist yet at this point (the g.Pype
-   pipeline and the PsychoPy window are both still coming up) — they get
-   folded into the already-running recording automatically once they appear,
-   per the Required Streams config above. Set `OW_NO_LABRECORDER=1` to drive
-   LabRecorder manually instead.
-4. The g.Pype pipeline starts (`run_pipeline()`), creating `EEG_gpype` and
-   launching `lsl_visualizer.py`.
+3. The g.Pype pipeline is built and started (`build_pipeline()`), creating
+   `EEG_gpype` and launching `lsl_visualizer.py` — *before* LabRecorder is
+   asked to start, so that stream is already live for it (see next step).
+4. **LabRecorder launches last**, via `start_lab_recorder()`: it attaches to
+   an already-running LabRecorder or launches `LabRecorder.exe`, then over
+   the remote-control socket sends `update`, `select all`, a `filename`
+   command (participant/session/task set from `name_and_trial` /
+   `OW_SESSION`), and `start` right away — it does not wait for every
+   Required Stream above to be online first. `EEG_gpype` is already live
+   (step 3 runs first), but `PsychoPyMarkers` typically isn't yet (the task
+   only creates it once its info dialog is dismissed by hand); being a
+   Required Stream, it's pre-checked and shown red until then, and
+   LabRecorder folds it into the already-running recording automatically
+   once it appears — no manual "update"/re-select needed. Set
+   `OW_NO_LABRECORDER=1` to drive LabRecorder manually instead.
 
 **Ctrl+C stops everything**: PsychoPy is asked to stop *gracefully* first (see
 below), LabRecorder's recording is stopped (`stop` over RCS — the app itself

@@ -39,7 +39,7 @@ from openlifu.plan.solution import Solution
 # ============================================================
 
 # name convention
-name_and_trial = "no_run"
+name_and_trial = "001"
 
 # all XDF output goes here (written by LabRecorder, see start_lab_recorder())
 XDF_DIR = Path("xdf_data")
@@ -261,6 +261,14 @@ def start_lab_recorder() -> tuple[subprocess.Popen | None, bool]:
         send("update")
         time.sleep(2.0)  # let LabRecorder finish its network stream scan
         send("select all")
+        # Small gaps between sends below: LabRecorder reads its RCS socket
+        # one line at a time off its Qt event loop, and commands fired back
+        # to back with no delay can land in the same TCP read -- only the
+        # first line then gets processed and the rest are silently dropped
+        # (symptom: the window opens but never auto-starts and the filename
+        # never updates). The 2s pause above happens to dodge this same race
+        # between "update" and "select all"; these commands need it too.
+        time.sleep(0.3)
         # Deliberately omits {template:...}: per LabRecorder's RCS docs, the
         # "template" key unselects BIDS mode as a side effect, which broke
         # the sub-%p/ses-%s/eeg/... path construction mid-command. BIDS mode
@@ -271,7 +279,22 @@ def start_lab_recorder() -> tuple[subprocess.Popen | None, bool]:
             "filename {root:%s} {participant:%s} {session:%s} {task:%s}"
             % (XDF_DIR.resolve(), name_and_trial, SESSION_LABEL, name_and_trial)
         )
+        time.sleep(0.3)
+        # Fires immediately, without waiting for every required stream (e.g.
+        # PsychoPyMarkers, which only appears once PsychoPy's own info dialog
+        # is dismissed by hand) to be online yet. Required streams are
+        # pre-checked and shown red until they come online, per their
+        # Required Streams config -- LabRecorder folds them into the already
+        # -running recording automatically once they appear, no manual
+        # "update"/re-select needed. See readme.md's Gotchas section.
         send("start")
+        # Same race as the gaps above, just at the very end: closing the
+        # socket right after sendall() can land the FIN in the same read as
+        # "start" itself, and LabRecorder drops/aborts it without erroring
+        # on our side -- symptom: this function logs success but nothing
+        # actually starts recording. Give it time to actually process the
+        # line before we tear the connection down.
+        time.sleep(0.5)
     except OSError as e:
         logger.warning("Failed to start LabRecorder recording over RCS: %s", e)
         sock.close()
@@ -665,12 +688,18 @@ def listen_for_start_stop():
         if sample is None:
             continue
         if sample[0] == "START_EXPERIMENT":
-            logger.info("Experiment started — enabling LIFU.")
-            eeg_trigger_outlet.push_sample(["START_EXPERIMENT_RECEIVED"])
-            start_recieved = True
+            # PsychoPy pushes this once per trial, not once per experiment --
+            # only react on the rising edge (first START_EXPERIMENT after a
+            # STOP_EXPERIMENT, or since this thread started) so repeats
+            # within the same running experiment are a no-op.
+            if not start_recieved:
+                logger.info("Experiment started — enabling LIFU.")
+                eeg_trigger_outlet.push_sample(["START_EXPERIMENT_RECEIVED"])
+                start_recieved = True
         elif sample[0] == "STOP_EXPERIMENT":
-            logger.info("Experiment ended — disabling LIFU.")
-            eeg_trigger_outlet.push_sample(["STOP_EXPERIMENT_RECEIVED"])
+            if start_recieved:
+                logger.info("Experiment ended — disabling LIFU.")
+                eeg_trigger_outlet.push_sample(["STOP_EXPERIMENT_RECEIVED"])
             start_recieved = False
 
 
@@ -836,15 +865,17 @@ def theta_trigger_loop(
 fs = 250
 
 
-def run_pipeline():
+def build_pipeline() -> tuple[gp.Pipeline, subprocess.Popen | None]:
     """
-    Runs the g.Pype processing pipeline headlessly (no gpype GUI/scope).
+    Builds and starts the g.Pype processing pipeline headlessly (no gpype
+    GUI/scope), including its EEG_gpype LSL outlet. Called before
+    start_lab_recorder() so that stream already exists by the time
+    LabRecorder is asked to start recording, instead of still being red.
+
     Real-time visualization of all LSL streams (raw EEG, EEG_gpype, and all
-    marker streams) is handled separately by lsl_visualizer.py.
-
-
-    Unless OW_NO_VISUALIZER is set, lsl_visualizer.py is launched
-    automatically as a subprocess and terminated when the pipeline stops.
+    marker streams) is handled separately by lsl_visualizer.py. Unless
+    OW_NO_VISUALIZER is set, lsl_visualizer.py is launched automatically as a
+    subprocess here and terminated by wait_for_stop().
     """
     p = gp.Pipeline()
     source = gp.BCICore8()
@@ -919,19 +950,20 @@ def run_pipeline():
         "lsl_visualizer.py shows all LSL streams (EEG_gpype, markers, etc.) "
         "in real time. Set OW_NO_VISUALIZER=1 to disable auto-launch."
     )
+    return p, visualizer_proc
+
+
+def wait_for_stop() -> None:
+    """Blocks until RUNNING is cleared (Ctrl+C or a stop trigger). The
+    g.Pype pipeline and lsl_visualizer.py built by build_pipeline() are torn
+    down separately, in main()'s own finally block, so that still happens
+    even if an exception is raised before this function is ever called.
+    """
     try:
         while RUNNING:
             time.sleep(0.5)
     except KeyboardInterrupt:
         logger.info("Pipeline interrupted, stopping g.Pype...")
-    finally:
-        # Each step runs in isolation: p.stop() can block for a while (it
-        # waits on gpype's internal threads), and if a second, impatient
-        # Ctrl+C lands during that wait it must not skip terminating
-        # lsl_visualizer.py -- that's what left the viewer window running
-        # before _cleanup_step existed.
-        _cleanup_step("stop g.Pype pipeline", p.stop)
-        _cleanup_step("terminate lsl_visualizer.py", _terminate_proc, visualizer_proc)
 
 
 # ============================================================
@@ -949,6 +981,8 @@ def main() -> int:
     psychopy_proc = None
     lab_recorder_proc = None
     lab_recorder_started = False
+    p = None
+    visualizer_proc = None
     try:
         if HARDWARE_ENABLED and SHAM_RUN:
             logger.info(
@@ -984,12 +1018,18 @@ def main() -> int:
         psychopy_proc = start_psychopy()
 
 
+        # Build & start the g.Pype pipeline now (not after start_lab_recorder()
+        # below) so its EEG_gpype LSL outlet already exists by the time
+        # LabRecorder is asked to start.
+        p, visualizer_proc = build_pipeline()
+
+
         # Start LabRecorder last, once every other stream/process is already
-        # under way. Streams that still aren't online yet (e.g. EEG_gpype,
-        # which run_pipeline() below hasn't created, or PsychoPyMarkers,
-        # which the task emits once its own window is up) are still folded
-        # into the recording automatically as they come online, per its
-        # Required Streams config -- see readme.md.
+        # under way. It's told to start recording right away without
+        # waiting for every Required Stream (see readme.md) to be online --
+        # e.g. PsychoPyMarkers, which the task only emits once its own info
+        # dialog is dismissed by hand -- those still get folded into the
+        # already-running recording automatically once they appear.
         lab_recorder_proc, lab_recorder_started = start_lab_recorder()
 
 
@@ -1010,18 +1050,21 @@ def main() -> int:
             trigger_slicer_run()
 
 
-        # Start g.Pype pipeline
-        run_pipeline()
+        # Block here until Ctrl+C or a stop trigger; the pipeline itself is
+        # already running (started by build_pipeline() above).
+        wait_for_stop()
 
 
     finally:
             # ALWAYS stop everything when the pipeline stops (including on
-            # Ctrl+C): PsychoPy, LabRecorder, LIFU hardware, and the theta
-            # thread. The g.Pype pipeline and lsl_visualizer.py are already
-            # stopped inside run_pipeline()'s own finally block. Each step
-            # below runs via _cleanup_step so one failing/interrupted step
-            # (e.g. another Ctrl+C landing mid-join) can't skip the rest.
+            # Ctrl+C): g.Pype, lsl_visualizer.py, PsychoPy, LabRecorder, LIFU
+            # hardware, and the theta thread. Each step below runs via
+            # _cleanup_step so one failing/interrupted step (e.g. another
+            # Ctrl+C landing mid-join) can't skip the rest.
             RUNNING = False
+            if p is not None:
+                _cleanup_step("stop g.Pype pipeline", p.stop)
+            _cleanup_step("terminate lsl_visualizer.py", _terminate_proc, visualizer_proc)
             _cleanup_step("stop PsychoPy", stop_psychopy, psychopy_proc)
             _cleanup_step("stop LabRecorder", stop_lab_recorder, lab_recorder_proc, lab_recorder_started)
             if interface is not None:
