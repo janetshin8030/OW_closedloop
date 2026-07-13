@@ -39,7 +39,7 @@ from openlifu.plan.solution import Solution
 # ============================================================
 
 # name convention
-name_and_trial = "001"
+name_and_trial = "hardware_enabled_demo"
 
 # all XDF output goes here (written by LabRecorder, see start_lab_recorder())
 XDF_DIR = Path("xdf_data")
@@ -451,6 +451,34 @@ def trigger_slicer_run(timeout: float = 5.0) -> bool:
             "Could not reach Slicer's remote-run listener (%s:%d): %s. Is Slicer running "
             "with the OpenLIFUSonicationControl module open, device connected, and solution "
             "sent to hardware? Click Run manually instead.",
+            SLICER_RUN_HOST, SLICER_RUN_PORT, e,
+        )
+        return False
+
+
+def trigger_slicer_stop(timeout: float = 5.0) -> bool:
+    """Asks Slicer's remote-run listener to stop the sonication run it
+    started via trigger_slicer_run(), over the same TCP protocol. Maps to
+    Logic.stop() on the Slicer side (not Logic.abort()): any sonication
+    pulse already in flight finishes normally and the run then ends, rather
+    than the trigger being yanked mid-pulse. Only meaningful in the same
+    case trigger_slicer_run() is used for -- HARDWARE_ENABLED is False, so
+    Slicer (not this script) holds the LIFUInterface connection and needs
+    to be told to shut its run down too when this script exits.
+    """
+    try:
+        with socket.create_connection((SLICER_RUN_HOST, SLICER_RUN_PORT), timeout=timeout) as sock:
+            sock.sendall(b"stop\n")
+            reply = sock.recv(1024).decode("utf-8", errors="ignore").strip()
+        if reply == "ok":
+            logger.info("Triggered Slicer's Stop over the remote-run listener.")
+            return True
+        logger.warning("Slicer remote-run listener replied unexpectedly: %r", reply)
+        return False
+    except OSError as e:
+        logger.warning(
+            "Could not reach Slicer's remote-run listener (%s:%d) to stop the run: %s. "
+            "Stop it manually in Slicer if a sonication run is still active.",
             SLICER_RUN_HOST, SLICER_RUN_PORT, e,
         )
         return False
@@ -1062,6 +1090,12 @@ def main() -> int:
             # _cleanup_step so one failing/interrupted step (e.g. another
             # Ctrl+C landing mid-join) can't skip the rest.
             RUNNING = False
+            if not HARDWARE_ENABLED and not SHAM_RUN:
+                # Slicer (not this script) holds the LIFUInterface connection
+                # in this mode -- see trigger_slicer_run()'s docstring -- so
+                # it needs its own stop signal too, or its run (and the
+                # hardware) would be left running after this script exits.
+                _cleanup_step("stop Slicer's sonication run", trigger_slicer_stop)
             if p is not None:
                 _cleanup_step("stop g.Pype pipeline", p.stop)
             _cleanup_step("terminate lsl_visualizer.py", _terminate_proc, visualizer_proc)

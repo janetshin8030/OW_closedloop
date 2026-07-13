@@ -689,6 +689,7 @@ class LIFUQtSignals(qt.QObject):
     deviceDisconnected = qt.Signal()  # Emitted from monitor thread; Qt queues to main thread
     dataReceived = qt.Signal(str, str)  # (descriptor, message)
     remoteRunRequested = qt.Signal()  # Emitted from _RemoteRunServer's thread; Qt queues to main thread
+    remoteStopRequested = qt.Signal()  # Emitted from _RemoteRunServer's thread; Qt queues to main thread
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -696,17 +697,18 @@ class LIFUQtSignals(qt.QObject):
 
 class _RemoteRunServer(threading.Thread):
     """Background TCP listener that lets an external process (see
-    main_pipeline.py's trigger_slicer_run()) remotely press the Run button,
-    without that process being able to reach into this module's Qt widgets
-    directly -- it runs in Slicer's own embedded interpreter, a separate
-    process from main_pipeline.py.
+    main_pipeline.py's trigger_slicer_run()/trigger_slicer_stop()) remotely
+    press the Run/Stop buttons, without that process being able to reach
+    into this module's Qt widgets directly -- it runs in Slicer's own
+    embedded interpreter, a separate process from main_pipeline.py.
 
     Only ever accepts connections from localhost and only understands the
-    "run" command. The accept loop runs entirely in this daemon thread; it
-    never calls into Slicer/openlifu objects itself -- it only emits
-    remoteRunRequested, which Qt automatically queues onto the main thread,
-    since driving the LIFUInterface off the main thread is unsafe (same
-    reasoning as the existing deviceConnected/deviceDisconnected signals).
+    "run" and "stop" commands. The accept loop runs entirely in this daemon
+    thread; it never calls into Slicer/openlifu objects itself -- it only
+    emits remoteRunRequested/remoteStopRequested, which Qt automatically
+    queues onto the main thread, since driving the LIFUInterface off the
+    main thread is unsafe (same reasoning as the existing
+    deviceConnected/deviceDisconnected signals).
     """
 
     def __init__(self, qt_signals: "LIFUQtSignals", host: str, port: int):
@@ -738,6 +740,10 @@ class _RemoteRunServer(threading.Thread):
                     if data == "run":
                         logging.info("[LIFU] Remote-run command received; triggering sonication run.")
                         self._qt_signals.remoteRunRequested.emit()
+                        conn.sendall(b"ok\n")
+                    elif data == "stop":
+                        logging.info("[LIFU] Remote-stop command received; stopping sonication run.")
+                        self._qt_signals.remoteStopRequested.emit()
                         conn.sendall(b"ok\n")
                     else:
                         logging.warning("[LIFU] Unknown remote command: %r", data)
@@ -821,6 +827,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         self.qt_signals.deviceDisconnected.connect(self._dispatch_device_disconnected)
         self.qt_signals.dataReceived.connect(self._dispatch_data_received)
         self.qt_signals.remoteRunRequested.connect(self._handle_remote_run_requested)
+        self.qt_signals.remoteStopRequested.connect(self._handle_remote_stop_requested)
 
         self.cur_lifu_interface = openlifu_lz().io.LIFUInterface(run_async=True, TX_test_mode=False, HV_test_mode=False)
 
@@ -1150,6 +1157,21 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         if not slicer.util.getModuleLogic('OpenLIFUData').validate_solution():
             raise RuntimeError("Invalid solution; not running sonication.")
         self.run()
+
+    def _handle_remote_stop_requested(self):
+        """Slot for remoteStopRequested, always invoked on the main thread by
+        Qt's queued-connection handling of a cross-thread signal emission
+        (see _RemoteRunServer). Calls stop() rather than abort(): a
+        graceful stop lets any sonication pulse already in flight
+        (starting_sonication()'s time.sleep(duration) loop in lsl_loop's
+        thread) finish and call stop_trigger() normally, instead of
+        abort()'s immediate stop_sonication() yanking the trigger mid-pulse.
+        Exceptions are logged rather than raised, since there is no caller
+        here to catch them."""
+        try:
+            self.stop()
+        except Exception as e:
+            logging.error("[LIFU] Remote stop request failed: %s", e)
 
     def run(self):
         " Returns True when the sonication control algorithm is done"
