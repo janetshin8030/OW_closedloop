@@ -9,7 +9,6 @@ import subprocess
 import sys
 import threading
 import time
-from enum import Enum, auto
 from pathlib import Path
 
 
@@ -638,23 +637,9 @@ BUFFER_COLLECTION_SIZE = 200 # minimum amount of samples to collect before start
 MAX_SONICATIONS = 10   # cap on NUM_SONICATIONS per run
 
 
-class RunState(Enum):
-    """theta_trigger_loop's cooldown lifecycle. COOLDOWN covers both the
-    window right after a trigger *and* the initial wait before the first
-    ever trigger -- cooldown_until starts at cooldown_time (matching the old
-    last_trigger_time=0 behavior) rather than allowing an immediate first
-    shot. Firing still additionally requires baseline_ready and
-    start_received (see below) -- those are independent conditions set by
-    two separate threads, not part of this lifecycle.
-    """
-    COOLDOWN = auto()
-    ARMED = auto()
-
-
 # Two independent readiness signals, set by two separate threads
 # (listen_for_start() and theta_trigger_loop() itself) with no ordering
-# guarantee between them -- both must be true, alongside RunState.ARMED
-# above, before triggering.
+# guarantee between them -- both must be true before triggering.
 baseline_ready = False
 start_received = False
 
@@ -743,8 +728,7 @@ def theta_trigger_loop(
 
 
     #theta_history = []
-    state = RunState.COOLDOWN
-    cooldown_until = cooldown_time  # first trigger also waits out one full cooldown, same as before
+    last_trigger_time = 0
     last_theta_val = None
     logger.info("Starting theta-based closed-loop monitoring...")
     buffer = []
@@ -792,17 +776,14 @@ def theta_trigger_loop(
         buffer.append(theta_val)
 
         now = ts
-        if state is RunState.COOLDOWN and now > cooldown_until:
-            state = RunState.ARMED
-            logger.debug("state -> ARMED (cooldown elapsed)")
-        logger.debug("state=%s baseline_ready=%s start_received=%s", state, baseline_ready, start_received)
+        logger.debug("baseline_ready=%s start_received=%s", baseline_ready, start_received)
 
         if (
-            state is RunState.ARMED
-            and baseline_ready
+            baseline_ready
             and start_received
             and theta_val < mad_threshold
             and theta_val > theta_threshold_z
+            and (now - last_trigger_time) > cooldown_time
             and NUM_SONICATIONS < max_sonications
         ):
             logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
@@ -823,8 +804,7 @@ def theta_trigger_loop(
                 lifu_num_outlet.push_sample([0.0])
 
 
-                cooldown_until = now + cooldown_time
-                state = RunState.COOLDOWN
+                last_trigger_time = now
                 logger.info("Theta-triggered sonication complete.")
             except Exception as e:
                 logger.error(f"Error during theta-triggered sonication: {e}")
