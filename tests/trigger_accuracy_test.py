@@ -37,8 +37,8 @@ import pandas as pd
 import pyxdf
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-XDF_PATH = REPO_ROOT / "xdf_data/sub-test/ses-1/eeg/sub-test_ses-1_task-test_run-001_eeg.xdf"
-TRIAL_NAME = 'debug'
+XDF_PATH = REPO_ROOT / "C:\\Users\\jshin\\OW_closedloopLIFU\\xdf_data\\sub-hardware_enabled_demo\\ses-1\\eeg\\sub-hardware_enabled_demo_ses-1_task-hardware_enabled_demo_run-001_eeg.xdf"
+TRIAL_NAME = 'hardware_enabled_demo'
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
 OUTPUT_DIR = Path(__file__).resolve().parent /"trigger_accuracy_plots"/ f"{TRIAL_NAME}"

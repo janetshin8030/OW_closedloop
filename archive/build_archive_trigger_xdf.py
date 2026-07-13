@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from _xdf_writer import write_xdf
+from archive._xdf_writer import write_xdf
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 EEG_CSV = REPO_ROOT / "archive" / "eeg_LSL_gpype2back_test.csv"

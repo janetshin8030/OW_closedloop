@@ -98,7 +98,7 @@ def _run(theta_values, **loop_kwargs):
     rather than main_pipeline module state).
     """
     main_pipeline.RUNNING = True
-    main_pipeline.start_recieved = True
+    main_pipeline.psychopy_running = True
 
     events = []
     real_eeg_trigger_outlet = main_pipeline.eeg_trigger_outlet

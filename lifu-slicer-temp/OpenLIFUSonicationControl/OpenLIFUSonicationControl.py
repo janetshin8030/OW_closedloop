@@ -1237,8 +1237,6 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
             post_call_ts = local_clock()
             logging.error(f"[LATENCY] start_trigger() returned at t={post_call_ts:.6f} (call took {(post_call_ts - pre_call_ts) * 1000:.1f}ms)")
             logging.error("Trigger Running...")
-            print(lifu_interface.hvcontroller.get_hv_status())
-            
 
             for i in range(int(duration), 0, -1):
                 logging.error(f"Sonication stopping in {i} seconds")
@@ -1259,11 +1257,15 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
    
     def stop(self):
         logging.error("Logic.stop() called")
-        # ---- Start the run ----
+        # ---- Stop the run ----
         self.running = False
-        
-        # TODO START SONICATION on HARDWARE
-        #self.cur_lifu_interface.stop_sonication()    
+
+        # Graceful stop (unlike abort(), doesn't yank stop_sonication() mid-pulse
+        # -- see _handle_remote_stop_requested's docstring), but HV should still
+        # come back down once the run is done, same as main_pipeline.py's own
+        # cleanup does for interface.hvcontroller.turn_hv_off() when it (not
+        # this module) holds the LIFUInterface connection.
+        self.cur_lifu_interface.hvcontroller.turn_hv_off()
 
     def abort(self) -> None:
         logging.debug("Logic.abort() called")

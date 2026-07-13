@@ -61,7 +61,7 @@ except ImportError:
 import main_pipeline  # noqa: E402
 
 
-XDF_PATH = Path(__file__).resolve().parent.parent / "xdf_data\\sub-test\\ses-1\\eeg\\sub-test_ses-1_task-test_run-001_eeg.xdf"
+XDF_PATH = Path(__file__).resolve().parent.parent / "C:\\Users\\jshin\\OW_closedloopLIFU\\xdf_data\\sub-active_demo\\ses-1\\eeg\\sub-active_demo_ses-1_task-active_demo_run-001_eeg_old1.xdf"
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
 THETA_CHANNEL_INDEX = 11
@@ -111,7 +111,7 @@ def _recorded_sample_source(eeg_stream, current_ts_holder, sonication_start_ts):
     """
     for sample, ts in zip(eeg_stream["time_series"], eeg_stream["time_stamps"]):
         if sonication_start_ts is not None and ts >= sonication_start_ts:
-            main_pipeline.start_recieved = True
+            main_pipeline.psychopy_running = True
         current_ts_holder["ts"] = ts
         yield sample[THETA_CHANNEL_INDEX], ts
 
@@ -182,7 +182,7 @@ def run():
         print("WARNING: no START_EXPERIMENT_RECEIVED marker found; enabling sonication from the first sample.")
         sonication_start_ts = t0
 
-    main_pipeline.start_recieved = False
+    main_pipeline.psychopy_running = False
     current_ts_holder = {"ts": None}
     sample_source = _recorded_sample_source(eeg_stream, current_ts_holder, sonication_start_ts)
     events = _run_with_sample_source(sample_source, current_ts_holder)
@@ -258,7 +258,7 @@ def _synthetic_sample_source(theta_values, current_ts_holder, sonication_start_t
     for i, theta_val in enumerate(theta_values):
         ts = i * DT
         if sonication_start_ts is not None and ts >= sonication_start_ts:
-            main_pipeline.start_recieved = True
+            main_pipeline.psychopy_running = True
         current_ts_holder["ts"] = ts
         yield theta_val, ts
 
@@ -276,7 +276,7 @@ def test_constant_above_threshold():
     sonication_start_ts = 5.0  # START_EXPERIMENT_RECEIVED equivalent, well before any possible trigger
 
     theta_values = _sine_values(int(duration_s / DT), center, amplitude, freq_hz=1.0)
-    main_pipeline.start_recieved = False
+    main_pipeline.psychopy_running = False
     current_ts_holder = {"ts": None}
     sample_source = _synthetic_sample_source(theta_values, current_ts_holder, sonication_start_ts)
     events = _run_with_sample_source(sample_source, current_ts_holder)
@@ -328,7 +328,7 @@ def test_oscillating_threshold():
         import math
         return math.sin(2 * math.pi * (1.0 / period_s) * ts) > 0
 
-    main_pipeline.start_recieved = False
+    main_pipeline.psychopy_running = False
     current_ts_holder = {"ts": None}
     sample_source = _synthetic_sample_source(theta_values, current_ts_holder, sonication_start_ts)
     events = _run_with_sample_source(sample_source, current_ts_holder)
