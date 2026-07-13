@@ -105,13 +105,13 @@ def _find_marker_time(marker_stream, marker_name):
 def _recorded_sample_source(eeg_stream, current_ts_holder, sonication_start_ts):
     """Yields (theta_val, ts) pairs from the recorded EEG_gpype channel, in
     order, tagged with each sample's own recorded timestamp. Flips
-    main_pipeline.experiment_started True once the replay reaches the
+    main_pipeline.start_received True once the replay reaches the
     recorded moment sonication was actually enabled live -- mirroring
     listen_for_start() without using LSL to do it.
     """
     for sample, ts in zip(eeg_stream["time_series"], eeg_stream["time_stamps"]):
         if sonication_start_ts is not None and ts >= sonication_start_ts:
-            main_pipeline.experiment_started = True
+            main_pipeline.start_received = True
         current_ts_holder["ts"] = ts
         yield sample[THETA_CHANNEL_INDEX], ts
 
@@ -120,7 +120,7 @@ def _run_with_sample_source(sample_source, current_ts_holder):
     """Runs the real main_pipeline.theta_trigger_loop against `sample_source`
     (an iterable of (theta_val, ts) pairs that is itself responsible for
     updating current_ts_holder["ts"] and flipping
-    main_pipeline.experiment_started at the right point), capturing every
+    main_pipeline.start_received at the right point), capturing every
     push_sample(...) call without any LSL involved. Returns the raw
     (marker, ts) event list.
     """
@@ -182,7 +182,7 @@ def run():
         print("WARNING: no START_EXPERIMENT_RECEIVED marker found; enabling sonication from the first sample.")
         sonication_start_ts = t0
 
-    main_pipeline.experiment_started = False
+    main_pipeline.start_received = False
     current_ts_holder = {"ts": None}
     sample_source = _recorded_sample_source(eeg_stream, current_ts_holder, sonication_start_ts)
     events = _run_with_sample_source(sample_source, current_ts_holder)
@@ -251,14 +251,14 @@ def _sine_values(n, center, amplitude, freq_hz):
 
 def _synthetic_sample_source(theta_values, current_ts_holder, sonication_start_ts):
     """Yields (theta_val, ts) pairs from a synthetic theta_values sequence
-    sampled at FS starting at t=0, flipping main_pipeline.experiment_started
+    sampled at FS starting at t=0, flipping main_pipeline.start_received
     True once ts reaches sonication_start_ts -- mirroring the real
     START_EXPERIMENT_RECEIVED gate (listen_for_start()) without any LSL.
     """
     for i, theta_val in enumerate(theta_values):
         ts = i * DT
         if sonication_start_ts is not None and ts >= sonication_start_ts:
-            main_pipeline.experiment_started = True
+            main_pipeline.start_received = True
         current_ts_holder["ts"] = ts
         yield theta_val, ts
 
@@ -276,7 +276,7 @@ def test_constant_above_threshold():
     sonication_start_ts = 5.0  # START_EXPERIMENT_RECEIVED equivalent, well before any possible trigger
 
     theta_values = _sine_values(int(duration_s / DT), center, amplitude, freq_hz=1.0)
-    main_pipeline.experiment_started = False
+    main_pipeline.start_received = False
     current_ts_holder = {"ts": None}
     sample_source = _synthetic_sample_source(theta_values, current_ts_holder, sonication_start_ts)
     events = _run_with_sample_source(sample_source, current_ts_holder)
@@ -312,7 +312,7 @@ def test_oscillating_threshold():
     within the trigger band. theta_trigger_loop should only ever sonicate
     while the value is actually in-band, should never violate the cooldown
     even though the value swings back into band multiple times per cooldown
-    window, and should never fire before experiment_started is set (the
+    window, and should never fire before start_received is set (the
     START_EXPERIMENT_RECEIVED gate).
     """
     print("\n=== test_oscillating_threshold ===")
@@ -328,7 +328,7 @@ def test_oscillating_threshold():
         import math
         return math.sin(2 * math.pi * (1.0 / period_s) * ts) > 0
 
-    main_pipeline.experiment_started = False
+    main_pipeline.start_received = False
     current_ts_holder = {"ts": None}
     sample_source = _synthetic_sample_source(theta_values, current_ts_holder, sonication_start_ts)
     events = _run_with_sample_source(sample_source, current_ts_holder)

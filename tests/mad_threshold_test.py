@@ -113,7 +113,7 @@ def _run(theta_values, **loop_kwargs):
     state).
     """
     main_pipeline.RUNNING = True
-    main_pipeline.experiment_started = True
+    main_pipeline.start_received = True
 
     events = []
     real_eeg_trigger_outlet = main_pipeline.eeg_trigger_outlet

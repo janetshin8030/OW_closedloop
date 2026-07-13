@@ -9,6 +9,7 @@ import subprocess
 import sys
 import threading
 import time
+from enum import Enum, auto
 from pathlib import Path
 
 
@@ -635,14 +636,33 @@ INITIAL_CUTOFF = 50.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
 BUFFER_COLLECTION_SIZE = 200 # minimum amount of samples to collect before starting to check for theta threshold crossings
 MAX_SONICATIONS = 10   # cap on NUM_SONICATIONS per run
-experiment_started = False
-baseline_collected = False   # set True by theta_trigger_loop() once baseline collection finishes
+
+
+class RunState(Enum):
+    """theta_trigger_loop's cooldown lifecycle. COOLDOWN covers both the
+    window right after a trigger *and* the initial wait before the first
+    ever trigger -- cooldown_until starts at cooldown_time (matching the old
+    last_trigger_time=0 behavior) rather than allowing an immediate first
+    shot. Firing still additionally requires baseline_ready and
+    start_received (see below) -- those are independent conditions set by
+    two separate threads, not part of this lifecycle.
+    """
+    COOLDOWN = auto()
+    ARMED = auto()
+
+
+# Two independent readiness signals, set by two separate threads
+# (listen_for_start() and theta_trigger_loop() itself) with no ordering
+# guarantee between them -- both must be true, alongside RunState.ARMED
+# above, before triggering.
+baseline_ready = False
+start_received = False
 
 
 
 
 def listen_for_start():
-    global experiment_started
+    global start_received
     inlet = StreamInlet(resolve_byprop("name", "PsychoPyMarkers")[0])
 
 
@@ -651,7 +671,7 @@ def listen_for_start():
         if sample and sample[0] == "START_EXPERIMENT":
             logger.info("Experiment started — enabling LIFU.")
             eeg_trigger_outlet.push_sample(["START_EXPERIMENT_RECEIVED"])
-            experiment_started = True
+            start_received = True
             break
 
 
@@ -716,14 +736,15 @@ def theta_trigger_loop(
     cooldown_time and a small max_sonications to exercise the NUM_SONICATIONS
     cap in real time without waiting on production-sized delays.
     """
-    global baseline_collected
+    global baseline_ready
     NUM_SONICATIONS = 0
     if sample_source is None:
         sample_source = theta_sample_source()
 
 
     #theta_history = []
-    last_trigger_time = 0
+    state = RunState.COOLDOWN
+    cooldown_until = cooldown_time  # first trigger also waits out one full cooldown, same as before
     last_theta_val = None
     logger.info("Starting theta-based closed-loop monitoring...")
     buffer = []
@@ -742,8 +763,8 @@ def theta_trigger_loop(
                 buffer.append(theta_val)
                 eeg_trigger_outlet.push_sample(["collecting_baseline"])
             continue
-        if not baseline_collected:
-            baseline_collected = True
+        if not baseline_ready:
+            baseline_ready = True
             logger.info("Baseline collection complete (%d samples). Sonication gate open.", len(buffer))
             eeg_trigger_outlet.push_sample(["baseline_collection_complete"])
         if len(buffer) > buffer_size:
@@ -771,14 +792,17 @@ def theta_trigger_loop(
         buffer.append(theta_val)
 
         now = ts
-        logger.debug("experiment_started=%s baseline_collected=%s", experiment_started, baseline_collected)
+        if state is RunState.COOLDOWN and now > cooldown_until:
+            state = RunState.ARMED
+            logger.debug("state -> ARMED (cooldown elapsed)")
+        logger.debug("state=%s baseline_ready=%s start_received=%s", state, baseline_ready, start_received)
 
         if (
-            experiment_started
-            and baseline_collected
+            state is RunState.ARMED
+            and baseline_ready
+            and start_received
             and theta_val < mad_threshold
             and theta_val > theta_threshold_z
-            and (now - last_trigger_time) > cooldown_time
             and NUM_SONICATIONS < max_sonications
         ):
             logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
@@ -799,7 +823,8 @@ def theta_trigger_loop(
                 lifu_num_outlet.push_sample([0.0])
 
 
-                last_trigger_time = now
+                cooldown_until = now + cooldown_time
+                state = RunState.COOLDOWN
                 logger.info("Theta-triggered sonication complete.")
             except Exception as e:
                 logger.error(f"Error during theta-triggered sonication: {e}")

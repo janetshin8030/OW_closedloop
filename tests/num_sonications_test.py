@@ -83,7 +83,7 @@ def _sine_values(n, center, amplitude, freq_hz):
 
 def _synthetic_sample_source(theta_values):
     """Yields (theta_val, ts) pairs sampled at FS starting at t=0, with
-    experiment_started already True throughout (set by the caller)."""
+    start_received already True throughout (set by the caller)."""
     for i, theta_val in enumerate(theta_values):
         yield theta_val, i * DT
 
@@ -98,7 +98,7 @@ def _run(theta_values, **loop_kwargs):
     rather than main_pipeline module state).
     """
     main_pipeline.RUNNING = True
-    main_pipeline.experiment_started = True
+    main_pipeline.start_received = True
 
     events = []
     real_eeg_trigger_outlet = main_pipeline.eeg_trigger_outlet
