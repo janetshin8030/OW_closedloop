@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 
+import argparse
 import logging
 import math
 import os
@@ -47,11 +48,17 @@ XDF_DIR.mkdir(exist_ok=True)
 #global variables for threads
 RUNNING = True
 
-# Set OW_HARDWARE_ENABLED=1 for NO GUI (python sonication)
-HARDWARE_ENABLED = bool(os.environ.get("OW_HARDWARE_ENABLED"))
-
-# Set OW_SHAM_RUN=1 for a sham (placebo) run --> run never pressed through slicer
-SHAM_RUN = bool(os.environ.get("OW_SHAM_RUN"))
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the closed-loop LIFU pipeline.")
+    parser.add_argument(
+        "--hardware-enabled", action="store_true", default=False,
+        help="Connect to the LIFU hardware directly (headless) instead of relying on the Slicer GUI's Run button. Default: disabled.",
+    )
+    parser.add_argument(
+        "--sham-run", action="store_true", default=False,
+        help="Sham (placebo) run: skip hardware init and the Slicer auto-run trigger so the LIFU never sonicates. Default: disabled.",
+    )
+    return parser.parse_args()
 
 
 # ============================================================
@@ -628,8 +635,8 @@ THETA_CHANNEL_INDEX = _router_channel_index(ROUTER_INPUT_CHANNELS, "hold")  # ch
 SONICATION_TIME = 5 #seconds i believe
 COOLDOWN_TIME = 15 #sonication time + cooldown time
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
-MU = 3.12
-SIGMA =  5.31
+# MU = 3.12
+# SIGMA =  5.31
 MAD_THRESHOLD = 60 #TESTING       # for artifact rejection in baseline collection
 INITIAL_CUTOFF = 50.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
@@ -638,26 +645,33 @@ MAX_SONICATIONS = 10   # cap on NUM_SONICATIONS per run
 
 
 # Two independent readiness signals, set by two separate threads
-# (listen_for_start() and theta_trigger_loop() itself) with no ordering
-# guarantee between them -- both must be true before triggering.
+# (listen_for_start_stop() and theta_trigger_loop() itself) with no
+# ordering guarantee between them -- both must be true before triggering.
+# Unlike baseline_ready (latches True once and stays there),
+# sonication_enabled can toggle back to False on a STOP_EXPERIMENT marker.
 baseline_ready = False
-start_received = False
+start_recieved = False
 
 
 
 
-def listen_for_start():
-    global start_received
+def listen_for_start_stop():
+    global start_recieved
     inlet = StreamInlet(resolve_byprop("name", "PsychoPyMarkers")[0])
 
 
-    while True:
+    while RUNNING:
         sample, ts = inlet.pull_sample(timeout=0.1)
-        if sample and sample[0] == "START_EXPERIMENT":
+        if sample is None:
+            continue
+        if sample[0] == "START_EXPERIMENT":
             logger.info("Experiment started — enabling LIFU.")
             eeg_trigger_outlet.push_sample(["START_EXPERIMENT_RECEIVED"])
-            start_received = True
-            break
+            start_recieved = True
+        elif sample[0] == "STOP_EXPERIMENT":
+            logger.info("Experiment ended — disabling LIFU.")
+            eeg_trigger_outlet.push_sample(["STOP_EXPERIMENT_RECEIVED"])
+            start_recieved = False
 
 
 def theta_sample_source(stream_name='EEG_gpype', channel_index=THETA_CHANNEL_INDEX, timeout=0.01):
@@ -776,11 +790,11 @@ def theta_trigger_loop(
         buffer.append(theta_val)
 
         now = ts
-        logger.debug("baseline_ready=%s start_received=%s", baseline_ready, start_received)
+        logger.debug("baseline_ready=%s sonication_enabled=%s", baseline_ready, start_recieved)
 
         if (
             baseline_ready
-            and start_received
+            and start_recieved
             and theta_val < mad_threshold
             and theta_val > theta_threshold_z
             and (now - last_trigger_time) > cooldown_time
@@ -844,7 +858,7 @@ def run_pipeline():
     moving_average = gp.MovingAverage(window_size=50)
     decimator = gp.Decimator(decimation_factor=10)
     hold = gp.Hold()
-    theta_z_eq = gp.Equation("(in - 5.36) / 6.60") # MANUALLY CHANGE
+    theta_z_eq = gp.Equation("(in - 5.36) / 6.60") # MANUALLY CHANGE MU AND SIGMA
 
 
 
@@ -926,6 +940,9 @@ def run_pipeline():
 
 def main() -> int:
     global RUNNING
+    args = parse_args()
+    HARDWARE_ENABLED = args.hardware_enabled
+    SHAM_RUN = args.sham_run
     RUNNING = True
     interface = None
     theta_thread = None
@@ -935,14 +952,14 @@ def main() -> int:
     try:
         if HARDWARE_ENABLED and SHAM_RUN:
             logger.info(
-                "OW_SHAM_RUN set; skipping init_hardware() -- interface stays None, "
+                "--sham-run set; skipping init_hardware() -- interface stays None, "
                 "so theta_trigger_loop runs its normal dry-run (markers emitted, no "
                 "hardware calls) and the LIFU will not sonicate this run."
             )
         elif HARDWARE_ENABLED:
             # Bring up hardware (USB connect, 12V/HV power-on, TX7332 enumeration,
             # beamforming solution) only when actually running this script with
-            # OW_HARDWARE_ENABLED set -- importing this module (e.g. for tests)
+            # --hardware-enabled -- importing this module (e.g. for tests)
             # never reaches here.
             try:
                 interface, solution = init_hardware()
@@ -950,8 +967,8 @@ def main() -> int:
                 logger.error("Hardware init failed: %s", e)
                 return 1
 
-        # Start thread to listen for experiment start trigger from PsychoPy
-        listen_for_psychopy_thread = threading.Thread(target=listen_for_start, daemon=True)
+        # Start thread to listen for experiment start/stop triggers from PsychoPy
+        listen_for_psychopy_thread = threading.Thread(target=listen_for_start_stop, daemon=True)
         listen_for_psychopy_thread.start()
 
 
@@ -986,7 +1003,7 @@ def main() -> int:
             pass
         elif SHAM_RUN:
             logger.info(
-                "OW_SHAM_RUN set; skipping the Slicer auto-run trigger -- Slicer "
+                "--sham-run set; skipping the Slicer auto-run trigger -- Slicer "
                 "stays unarmed, so the LIFU will not sonicate this run."
             )
         else:

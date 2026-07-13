@@ -62,19 +62,19 @@ see "Filename template" below — so `start_lab_recorder()`'s runtime RCS
 ## Per-run workflow (automated)
 
 `main_pipeline.py` now drives both the PsychoPy task and LabRecorder for you.
-Just run `python main_pipeline.py` (set `OW_HARDWARE_ENABLED=1` first if you
-want the real transducer armed). Startup happens in this order:
+Just run `python main_pipeline.py` (add `--hardware-enabled` if you want the
+real transducer armed). Startup happens in this order:
 
-1. Hardware init (if `OW_HARDWARE_ENABLED=1`), then the theta/LIFU-marker/EEG
+1. Hardware init (if `--hardware-enabled`), then the theta/LIFU-marker/EEG
    background threads start and begin listening.
 
-For a **sham (placebo) run**, set `OW_SHAM_RUN=1`. Everything else runs
+For a **sham (placebo) run**, pass `--sham-run`. Everything else runs
 exactly as normal — EEG streaming, theta detection, `LIFU_ON`/`LIFU_OFF`
 markers, CSV/XDF recording — but the two places that would actually arm the
 transducer are skipped: `init_hardware()` is not called (if
-`OW_HARDWARE_ENABLED=1`) and the Slicer auto-run trigger is not sent (if
-`OW_HARDWARE_ENABLED` is unset, the normal Slicer-controlled path). The LIFU
-device never sonicates.
+`--hardware-enabled` is also set) and the Slicer auto-run trigger is not sent
+(if `--hardware-enabled` is not set, the normal Slicer-controlled path). The
+LIFU device never sonicates.
 2. **PsychoPy task launches** via `start_psychopy()` — by default
    `n-back-task-with-visual-stimuli/N-back_lastrun.py`, run with the separate
    PsychoPy Python at `C:\Users\jshin\python.exe` (not the interpreter running
