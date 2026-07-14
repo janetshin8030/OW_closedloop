@@ -1236,13 +1236,13 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         self.qt_signals.finishScanning.emit(True)
 
 
-    def _call_hw_with_retry(self, fn, description, retries=2, retry_delay=0.1):
+    def _call_hw_with_retry(self, fn, description, retries=0, retry_delay=0.1):
         """Call a zero-arg hardware function, retrying on exception.
 
         The openlifu console/TX layer can raise (e.g. AttributeError) instead of
         returning False when a UART packet times out, so a bare call can crash
-        the calling thread. This retries a bounded number of times (a timeout is
-        often transient) and returns False instead of propagating once exhausted.
+        the calling thread. Fails fast by default (retries=0, i.e. one attempt,
+        no added delay) and returns False instead of propagating once exhausted.
         """
         for attempt in range(1, retries + 2):
             try:
@@ -1256,7 +1256,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
     def starting_sonication(self, duration, lifu_interface):
         pre_call_ts = local_clock()
         logging.error(f"[LATENCY] calling start_trigger() at t={pre_call_ts:.6f}")
-        if self._call_hw_with_retry(lifu_interface.txdevice.start_trigger, "start_trigger", retry_delay=0.1):
+        if self._call_hw_with_retry(lifu_interface.txdevice.start_trigger, "start_trigger"):
             post_call_ts = local_clock()
             logging.error(f"[LATENCY] start_trigger() returned at t={post_call_ts:.6f} (call took {(post_call_ts - pre_call_ts) * 1000:.1f}ms)")
             logging.error("Trigger Running...")
@@ -1268,9 +1268,11 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
             if self._call_hw_with_retry(lifu_interface.txdevice.stop_trigger, "stop_trigger"):
                 logging.error("Trigger stopped successfully.")
             else:
-                logging.error("Failed to stop trigger.")
+                logging.error("Failed to stop trigger after retries -- aborting run.")
+                self._abort_due_to_hw_failure()
         else:
-            logging.error("Failed to get trigger setting.")
+            logging.error("Failed to start trigger after retries -- aborting run.")
+            self._abort_due_to_hw_failure()
 
 
             # # # TODO START SONICATION on HARDWARE
@@ -1289,6 +1291,21 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         # cleanup does for interface.hvcontroller.turn_hv_off() when it (not
         # this module) holds the LIFUInterface connection.
         self.cur_lifu_interface.hvcontroller.turn_hv_off()
+
+    def _abort_due_to_hw_failure(self) -> None:
+        """Abort the run after a trigger call keeps failing even after retries.
+
+        Reuses abort()'s existing hardware-stop + state cleanup, but guarantees
+        self.running is cleared even if abort() itself raises (e.g. if the
+        console is unresponsive enough that stop_sonication() also fails) --
+        otherwise lsl_loop's while loop would keep running.
+        """
+        try:
+            self.abort()
+        except Exception as e:
+            logging.error(f"abort() failed during hw-failure cleanup: {e}")
+        finally:
+            self.running = False
 
     def abort(self) -> None:
         logging.debug("Logic.abort() called")
