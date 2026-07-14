@@ -1177,6 +1177,9 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         " Returns True when the sonication control algorithm is done"
         logging.error("Logic.run() called")
 
+        if self.running:
+            raise RuntimeError("A run is already active; ignoring duplicate run request.")
+
         if get_openlifu_data_parameter_node().loaded_solution is None:
             raise RuntimeError("No solution loaded; cannot run sonication.")
 

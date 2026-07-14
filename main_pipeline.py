@@ -39,7 +39,7 @@ from openlifu.plan.solution import Solution
 # ============================================================
 
 # name convention
-name_and_trial = "hardware_enabled_demo"
+name_and_trial = "dave_demo"
 
 # all XDF output goes here (written by LabRecorder, see start_lab_recorder())
 XDF_DIR = Path("xdf_data")
@@ -910,7 +910,9 @@ def main() -> int:
                 "stays unarmed, so the LIFU will not sonicate this run."
             )
         else:
-            trigger_slicer_run()
+            if not trigger_slicer_run():
+                logger.error("Slicer run command failed; aborting startup with sonication unarmed.")
+                return 1
 
 
         # Block here until Ctrl+C or a stop trigger; the pipeline itself is
