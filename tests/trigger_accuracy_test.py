@@ -37,7 +37,12 @@ import pandas as pd
 import pyxdf
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-XDF_PATH = REPO_ROOT / "C:\\Users\\jshin\\OW_closedloopLIFU\\xdf_data\\sub-hardware_enabled_demo\\ses-1\\eeg\\sub-hardware_enabled_demo_ses-1_task-hardware_enabled_demo_run-001_eeg.xdf"
+XDF_PATH = (
+    Path(__file__).resolve().parent
+    / "resources"
+    / "xdf"
+    / "sub-hardware_enabled_demo_ses-1_task-hardware_enabled_demo_run-001_eeg.xdf"
+)
 TRIAL_NAME = 'hardware_enabled_demo'
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
@@ -103,7 +108,7 @@ def _detect_trigger(window_df, lifu_on_ts, trigger_channel):
     return after.loc[hits[0], "Time"], median, mad
 
 
-def run():
+def _analyze_recording(output_dir):
     streams = _load_streams()
     eeg_stream = streams[EEG_STREAM_NAME]
     marker_stream = streams[TRIGGER_STREAM_NAME]
@@ -130,7 +135,7 @@ def run():
         print(f"Skipped {len(skipped)} marker(s) too close to the recording edge for a full "
               f"{WINDOW_SAMPLES}-sample window: " + ", ".join(f"{t - t0:.3f}s" for t in skipped))
 
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     stacked = []
     latency_rows = []
     window_idx = 0
@@ -164,15 +169,15 @@ def run():
 
     if stacked:
         all_windows = pd.concat(stacked, ignore_index=True)
-        all_windows_path = OUTPUT_DIR / "all_windows.csv"
+        all_windows_path = output_dir / "all_windows.csv"
         all_windows.to_csv(all_windows_path, index=False)
         print(f"\nSaved {window_idx} window(s) x {WINDOW_SAMPLES} samples to "
-              f"{all_windows_path.relative_to(REPO_ROOT)}")
+              f"{all_windows_path}")
 
         latencies_df = pd.DataFrame(latency_rows)
-        latencies_path = OUTPUT_DIR / "latencies.csv"
+        latencies_path = output_dir / "latencies.csv"
         latencies_df.to_csv(latencies_path, index=False)
-        print(f"Saved per-window latencies to {latencies_path.relative_to(REPO_ROOT)}")
+        print(f"Saved per-window latencies to {latencies_path}")
 
         detected = latencies_df["latency_ms"].dropna()
         if len(detected):
@@ -187,6 +192,12 @@ def run():
     return results, latency_rows
 
 
-if __name__ == "__main__":
-    run()
-    print("\nTest complete.")
+def test_recorded_trigger_accuracy(tmp_path):
+    results, latency_rows = _analyze_recording(tmp_path)
+
+    assert len(results) == 4
+    assert all(window is not None for _timestamp, window in results)
+    assert len(latency_rows) == 4
+    detected_latencies = [row["latency_ms"] for row in latency_rows if row["latency_ms"] is not None]
+    assert detected_latencies
+    assert all(latency >= 0 for latency in detected_latencies)

@@ -61,7 +61,12 @@ except ImportError:
 import main_pipeline  # noqa: E402
 
 
-XDF_PATH = Path(__file__).resolve().parent.parent / "C:\\Users\\jshin\\OW_closedloopLIFU\\xdf_data\\sub-active_demo\\ses-1\\eeg\\sub-active_demo_ses-1_task-active_demo_run-001_eeg_old1.xdf"
+XDF_PATH = (
+    Path(__file__).resolve().parent
+    / "resources"
+    / "xdf"
+    / "sub-active_demo_ses-1_task-active_demo_run-001_eeg_old1.xdf"
+)
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
 THETA_CHANNEL_INDEX = 11
@@ -136,7 +141,7 @@ def _run_with_sample_source(sample_source, current_ts_holder):
         # theta_trigger_loop prints a line on every accepted sample; swallow
         # it so tens of thousands of lines don't drown out the results below.
         with contextlib.redirect_stdout(io.StringIO()):
-            main_pipeline.theta_trigger_loop(sample_source=sample_source)
+            main_pipeline.theta_trigger_loop(sample_source=sample_source, sonication_time=0.0)
     finally:
         main_pipeline.eeg_trigger_outlet = real_eeg_trigger_outlet
         main_pipeline.lifu_num_outlet = real_lifu_num_outlet
@@ -171,7 +176,7 @@ def _stream_gap_report(eeg_stream, center_ts, window_s=1.0, ratio_threshold=1.5)
     return nominal, anomalies
 
 
-def run():
+def test_recorded_trigger_replay_matches_online_markers():
     streams = _load_streams()
     eeg_stream = streams[EEG_STREAM_NAME]
     lifu_stream = streams[TRIGGER_STREAM_NAME]
@@ -222,7 +227,8 @@ def run():
     if len(offline_on) != len(online_on):
         print(f"\nWARNING: {len(offline_on)} offline vs {len(online_on)} online LIFU_ON -- count mismatch.")
 
-    return offline_on, online_on
+    assert len(offline_on) == len(online_on) == 5
+    assert np.allclose(offline_on, online_on, atol=TOLERANCE_S, rtol=0)
 
 
 # ---------------------------------------------------------------------------
@@ -357,26 +363,6 @@ def test_oscillating_threshold():
 
 
 def _report(checks):
-    all_ok = True
     for description, passed in checks:
         print(f"  {'PASS' if passed else 'FAIL'}  {description}")
-        all_ok = all_ok and passed
-    print("RESULT:", "PASS" if all_ok else "FAIL")
-    return all_ok
-
-
-if __name__ == "__main__":
-    run()
-
-    results = {
-        "test_constant_above_threshold": test_constant_above_threshold(),
-        "test_oscillating_threshold": test_oscillating_threshold(),
-    }
-
-    print("\n=== Summary ===")
-    for name, passed in results.items():
-        print(f"  {'PASS' if passed else 'FAIL'}  {name}")
-
-    print("\nTest complete.")
-    if not all(results.values()):
-        sys.exit(1)
+        assert passed, description
