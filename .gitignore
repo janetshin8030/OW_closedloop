@@ -1,5 +1,37 @@
-# Ignore the virtual environment folder
+# Python environments and bytecode
 venv/
 .venv/
 env/
-LabRecorder-*
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE and OS metadata
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local applications
+LabRecorder-*/
+
+# Experiment and acquisition output
+csv_data/
+xdf_data/
+lab_recorder_data_archive/
+n-back-task-with-visual-stimuli/data/
+stroop/data/
+
+# Generated analysis and test output
+tests/trigger_accuracy_plots/
+archive/*.csv
+archive/*.png
+eeg_windows/
+
+# Runtime-generated OpenLIFU database records.
+# Keep the Slicer extension source and database templates tracked.
+lifu-slicer-temp/OpenLIFUDatabase/openlifu-sample-database/subjects/*/sessions/*/runs/
+lifu-slicer-temp/OpenLIFUDatabase/openlifu-sample-database/subjects/*/sessions/*/solutions/
