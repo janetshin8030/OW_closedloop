@@ -1219,7 +1219,10 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
 
             if value == "1.0": # and current_time - last_trigger_time > COOLDOWN_WINDOW:
                 logging.error(f"[LATENCY] sample received at t={local_clock():.6f} (lsl sample ts={ts:.6f})")
-                self.starting_sonication(SONICATION_TIME, lifu_interface)
+                try:
+                    self.starting_sonication(SONICATION_TIME, lifu_interface)
+                except Exception as e:
+                    logging.error(f"starting_sonication() raised unexpectedly, skipping this trigger: {e}")
                 #last_trigger_time = ts
 
         # The while loop above only exits once the whole run session is over
@@ -1230,10 +1233,27 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         self.qt_signals.finishScanning.emit(True)
 
 
+    def _call_hw_with_retry(self, fn, description, retries=2, retry_delay=0.1):
+        """Call a zero-arg hardware function, retrying on exception.
+
+        The openlifu console/TX layer can raise (e.g. AttributeError) instead of
+        returning False when a UART packet times out, so a bare call can crash
+        the calling thread. This retries a bounded number of times (a timeout is
+        often transient) and returns False instead of propagating once exhausted.
+        """
+        for attempt in range(1, retries + 2):
+            try:
+                return fn()
+            except Exception as e:
+                logging.error(f"{description} failed (attempt {attempt}): {e}")
+                if attempt <= retries:
+                    time.sleep(retry_delay)
+        return False
+
     def starting_sonication(self, duration, lifu_interface):
         pre_call_ts = local_clock()
         logging.error(f"[LATENCY] calling start_trigger() at t={pre_call_ts:.6f}")
-        if lifu_interface.txdevice.start_trigger():
+        if self._call_hw_with_retry(lifu_interface.txdevice.start_trigger, "start_trigger", retry_delay=0.1):
             post_call_ts = local_clock()
             logging.error(f"[LATENCY] start_trigger() returned at t={post_call_ts:.6f} (call took {(post_call_ts - pre_call_ts) * 1000:.1f}ms)")
             logging.error("Trigger Running...")
@@ -1242,7 +1262,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
                 logging.error(f"Sonication stopping in {i} seconds")
                 time.sleep(1)
 
-            if lifu_interface.txdevice.stop_trigger():
+            if self._call_hw_with_retry(lifu_interface.txdevice.stop_trigger, "stop_trigger"):
                 logging.error("Trigger stopped successfully.")
             else:
                 logging.error("Failed to stop trigger.")

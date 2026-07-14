@@ -5,7 +5,7 @@ import keyboard   # pip install keyboard
 def main():
     # Configure marker outlet
     info = StreamInfo(
-        name='SlicerTestTrigger',
+        name='PsychoPy_numeric',
         type='Markers',
         channel_count=1,
         nominal_srate=0,
