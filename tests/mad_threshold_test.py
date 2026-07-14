@@ -217,4 +217,3 @@ def test_rejected_spike_is_excluded_from_the_buffer():
     ]
     return _report(checks)
 
-
