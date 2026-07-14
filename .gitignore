@@ -15,10 +15,13 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Local applications
+# Local applications and upload caches
 LabRecorder-*/
+.tmp.driveupload/
 
 # Experiment and acquisition output
+*.xdf
+!tests/resources/**/*.xdf
 csv_data/
 xdf_data/
 lab_recorder_data_archive/
@@ -31,7 +34,5 @@ archive/*.csv
 archive/*.png
 eeg_windows/
 
-# Runtime-generated OpenLIFU database records.
-# Keep the Slicer extension source and database templates tracked.
-lifu-slicer-temp/OpenLIFUDatabase/openlifu-sample-database/subjects/*/sessions/*/runs/
-lifu-slicer-temp/OpenLIFUDatabase/openlifu-sample-database/subjects/*/sessions/*/solutions/
+# Vendored/generated OpenLIFU sample database
+lifu-slicer-temp/OpenLIFUDatabase/openlifu-sample-database/
