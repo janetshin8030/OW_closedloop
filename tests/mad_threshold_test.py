@@ -136,12 +136,9 @@ def _run(theta_values, **loop_kwargs):
 
 
 def _report(checks):
-    all_ok = True
     for description, passed in checks:
         print(f"  {'PASS' if passed else 'FAIL'}  {description}")
-        all_ok = all_ok and passed
-    print("RESULT:", "PASS" if all_ok else "FAIL")
-    return all_ok
+        assert passed, description
 
 
 def test_strict_mad_threshold_rejects_the_spike():
@@ -166,7 +163,6 @@ def test_strict_mad_threshold_rejects_the_spike():
         ("NUM_SONICATIONS stayed at 0", num_sonications == 0),
     ]
     return _report(checks)
-
 
 def test_loose_mad_threshold_accepts_the_spike():
     """The identical spike, with mad_threshold above its z-score, should be
@@ -221,18 +217,3 @@ def test_rejected_spike_is_excluded_from_the_buffer():
     ]
     return _report(checks)
 
-
-if __name__ == "__main__":
-    results = {
-        "test_strict_mad_threshold_rejects_the_spike": test_strict_mad_threshold_rejects_the_spike(),
-        "test_loose_mad_threshold_accepts_the_spike": test_loose_mad_threshold_accepts_the_spike(),
-        "test_rejected_spike_is_excluded_from_the_buffer": test_rejected_spike_is_excluded_from_the_buffer(),
-    }
-
-    print("\n=== Summary ===")
-    for name, passed in results.items():
-        print(f"  {'PASS' if passed else 'FAIL'}  {name}")
-
-    print("\nTest complete.")
-    if not all(results.values()):
-        sys.exit(1)

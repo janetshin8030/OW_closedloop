@@ -74,6 +74,30 @@ class _RecordingOutlet:
         self._events.append(sample[0])
 
 
+class _FailingOutlet:
+    def push_sample(self, sample, *args, **kwargs):
+        raise RuntimeError("simulated marker transport failure")
+
+
+class _RecordingTxDevice:
+    def __init__(self):
+        self.start_calls = 0
+        self.stop_calls = 0
+
+    def start_trigger(self):
+        self.start_calls += 1
+        return True
+
+    def stop_trigger(self):
+        self.stop_calls += 1
+        return True
+
+
+class _RecordingInterface:
+    def __init__(self):
+        self.txdevice = _RecordingTxDevice()
+
+
 def _sine_values(n, center, amplitude, freq_hz):
     """A continuously in-band signal (see theta_lifu_validation_test.py for
     why a sine is used instead of a square wave: it avoids the rolling
@@ -120,12 +144,9 @@ def _run(theta_values, **loop_kwargs):
 
 
 def _report(checks):
-    all_ok = True
     for description, passed in checks:
         print(f"  {'PASS' if passed else 'FAIL'}  {description}")
-        all_ok = all_ok and passed
-    print("RESULT:", "PASS" if all_ok else "FAIL")
-    return all_ok
+        assert passed, description
 
 
 def test_num_sonications_increments_and_stops_at_cap():
@@ -176,16 +197,35 @@ def test_num_sonications_resets_between_runs():
     return _report(checks)
 
 
-if __name__ == "__main__":
-    results = {
-        "test_num_sonications_increments_and_stops_at_cap": test_num_sonications_increments_and_stops_at_cap(),
-        "test_num_sonications_resets_between_runs": test_num_sonications_resets_between_runs(),
-    }
+def test_hardware_trigger_stops_when_marker_publication_fails():
+    """Once hardware triggering starts, later telemetry failures must not
+    bypass stop_trigger()."""
+    main_pipeline.RUNNING = True
+    main_pipeline.baseline_ready = False
+    main_pipeline.psychopy_running = True
 
-    print("\n=== Summary ===")
-    for name, passed in results.items():
-        print(f"  {'PASS' if passed else 'FAIL'}  {name}")
+    interface = _RecordingInterface()
+    real_eeg_trigger_outlet = main_pipeline.eeg_trigger_outlet
+    real_lifu_num_outlet = main_pipeline.lifu_num_outlet
+    main_pipeline.eeg_trigger_outlet = _RecordingOutlet([])
+    main_pipeline.lifu_num_outlet = _FailingOutlet()
 
-    print("\nTest complete.")
-    if not all(results.values()):
-        sys.exit(1)
+    baseline = [1.0 + i * 0.0001 for i in range(202)]
+    samples = [(value, i * 0.1) for i, value in enumerate(baseline)]
+    samples.append((3.0, 21.0))
+
+    try:
+        main_pipeline.theta_trigger_loop(
+            sample_source=iter(samples),
+            interface=interface,
+            sonication_time=0.0,
+            cooldown_time=0.0,
+            mad_threshold=1000.0,
+            max_sonications=1,
+        )
+    finally:
+        main_pipeline.eeg_trigger_outlet = real_eeg_trigger_outlet
+        main_pipeline.lifu_num_outlet = real_lifu_num_outlet
+
+    assert interface.txdevice.start_calls == 1
+    assert interface.txdevice.stop_calls == 1

@@ -1,0 +1,5 @@
+-r requirements.txt
+
+pytest>=8.0
+pandas>=2.0
+pyxdf>=1.17

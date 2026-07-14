@@ -722,17 +722,21 @@ def theta_trigger_loop(
             logger.info(f"Theta threshold crossed: z={theta_val:.2f}. Triggering LIFU.")
             try:
                 eeg_trigger_outlet.push_sample(["LIFU_ON"])
-                if interface is not None and not interface.txdevice.start_trigger():
-                    logger.error("Failed to start LIFU trigger.")
-                    continue
-                lifu_num_outlet.push_sample([1.0])
-                NUM_SONICATIONS += 1
+                trigger_started = False
+                if interface is not None:
+                    trigger_started = interface.txdevice.start_trigger()
+                    if not trigger_started:
+                        logger.error("Failed to start LIFU trigger.")
+                        continue
+                try:
+                    lifu_num_outlet.push_sample([1.0])
+                    NUM_SONICATIONS += 1
 
 
-                time.sleep(sonication_time)
-
-                if interface is not None and not interface.txdevice.stop_trigger():
-                    logger.error("Failed to stop LIFU trigger.")
+                    time.sleep(sonication_time)
+                finally:
+                    if trigger_started and not interface.txdevice.stop_trigger():
+                        logger.error("Failed to stop LIFU trigger.")
                 eeg_trigger_outlet.push_sample(["LIFU_OFF"])
                 lifu_num_outlet.push_sample([0.0])
 
