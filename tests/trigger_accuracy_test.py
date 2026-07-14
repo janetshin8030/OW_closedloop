@@ -199,5 +199,5 @@ def test_recorded_trigger_accuracy(tmp_path):
     assert all(window is not None for _timestamp, window in results)
     assert len(latency_rows) == 4
     detected_latencies = [row["latency_ms"] for row in latency_rows if row["latency_ms"] is not None]
-    assert detected_latencies
-    assert all(latency >= 0 for latency in detected_latencies)
+    assert len(detected_latencies) == 4
+    assert all(0 <= latency <= 250 for latency in detected_latencies)
