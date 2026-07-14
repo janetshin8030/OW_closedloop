@@ -2,4 +2,32 @@
 venv/
 .venv/
 env/
-LabRecorder-*
+
+# Third-party binary distribution
+LabRecorder-*/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Recording / data outputs
+*.xdf
+csv_data/
+archive/*.csv
+archive/*.png
+n-back-task-with-visual-stimuli/data/
+tests/trigger_accuracy_plots/
+eeg_windows/
+stroop/data/
+
+# IDE project settings (machine-specific)
+.idea/
+
+# Sample database (untracked for now, may re-scope later)
+lifu-slicer-temp/OpenLIFUDatabase/openlifu-sample-database/
+
+# Google Drive Desktop temp upload cache
+.tmp.driveupload/
