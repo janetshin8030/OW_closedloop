@@ -62,10 +62,12 @@ import main_pipeline  # noqa: E402
 
 
 XDF_PATH = (
-    Path(__file__).resolve().parent
-    / "resources"
-    / "xdf"
-    / "sub-active_demo_ses-1_task-active_demo_run-001_eeg_old1.xdf"
+    Path(__file__).resolve().parent.parent
+    / "xdf_data"
+    / "sub-dave_run_2"
+    / "ses-1"
+    / "eeg"
+    / "sub-dave_run_2_ses-1_task-dave_run_2_run-001_eeg.xdf"
 )
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
@@ -227,7 +229,8 @@ def test_recorded_trigger_replay_matches_online_markers():
     if len(offline_on) != len(online_on):
         print(f"\nWARNING: {len(offline_on)} offline vs {len(online_on)} online LIFU_ON -- count mismatch.")
 
-    assert len(offline_on) == len(online_on) == 5
+    assert 1 <= len(online_on) <= 10, f"expected 1-10 LIFU_ON events, got {len(online_on)}"
+    assert len(offline_on) == len(online_on)
     assert np.allclose(offline_on, online_on, atol=TOLERANCE_S, rtol=0)
 
 

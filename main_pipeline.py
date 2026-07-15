@@ -39,7 +39,7 @@ from openlifu.plan.solution import Solution
 # ============================================================
 
 # name convention
-name_and_trial = "phantom_test_run"
+name_and_trial = "sham_run_3"
 
 # all XDF output goes here (written by LabRecorder, see start_lab_recorder())
 XDF_DIR = Path("xdf_data")
@@ -577,11 +577,11 @@ THETA_CHANNEL_INDEX = _router_channel_index(ROUTER_INPUT_CHANNELS, "hold")  # ch
 SONICATION_TIME = 5 # seconds
 COOLDOWN_TIME = 15 #sonication time + cooldown time
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
-MU = 5.36
-SIGMA =  6.60
-MAD_THRESHOLD = 60      # for artifact rejection in baseline collection
-ABS_VALUE_CUTOFF = 60 # CHANGE FOR ACTUAL TESTING   # absolute ceiling on theta_val itself, guards against slow drift/corruption that a rolling MAD check can't catch
-INITIAL_CUTOFF = 50.0   # initial power threshold to exclude extreme artifacts
+MU = 1.32
+SIGMA =  3.74
+MAD_THRESHOLD = 10      # for artifact rejection in baseline collection
+ABS_VALUE_CUTOFF = 10 # CHANGE FOR ACTUAL TESTING   # absolute ceiling on theta_val itself, guards against slow drift/corruption that a rolling MAD check can't catch
+INITIAL_CUTOFF = 25.0   # initial power threshold to exclude extreme artifacts
 BUFFER_SIZE = 500
 BUFFER_COLLECTION_SIZE = 200 # minimum amount of samples to collect before starting to check for theta threshold crossings
 MAX_SONICATIONS = 10   # cap on NUM_SONICATIONS per run

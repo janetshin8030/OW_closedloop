@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2026.1.3),
-    on July 10, 2026, at 11:21
+    on July 15, 2026, at 11:00
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -571,7 +571,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 key_resp_2.duration = _key_resp_2_allKeys[-1].duration
                 # a response ends the routine
                 continueRoutine = False
-        
+
         # check for a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
         # pushes -1.0 on PsychoPy_numeric so this task saves its data before
         # exiting, same as pressing Escape below)
@@ -705,7 +705,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 # update status
                 fixation_1.status = FINISHED
                 fixation_1.setAutoDraw(False)
-        
+
         # check for a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
         # pushes -1.0 on PsychoPy_numeric so this task saves its data before
         # exiting, same as pressing Escape below)
@@ -771,7 +771,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         method='sequential', 
         extraInfo=expInfo, 
         originPath=-1, 
-        trialList=data.importConditions('trial_2.xlsx'), 
+        trialList=data.importConditions('trial_3.xlsx'),
         seed=None, 
         isTrials=True, 
     )
@@ -1173,7 +1173,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 # update status
                 thank_you.status = FINISHED
                 thank_you.setAutoDraw(False)
-        
+
         # check for a stop signal from main_pipeline.py (Ctrl+C -> stop_psychopy()
         # pushes -1.0 on PsychoPy_numeric so this task saves its data before
         # exiting, same as pressing Escape below)
