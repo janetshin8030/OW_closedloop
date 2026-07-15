@@ -39,7 +39,7 @@ from openlifu.plan.solution import Solution
 # ============================================================
 
 # name convention
-name_and_trial = "dave_demo"
+name_and_trial = "phantom_test_run"
 
 # all XDF output goes here (written by LabRecorder, see start_lab_recorder())
 XDF_DIR = Path("xdf_data")

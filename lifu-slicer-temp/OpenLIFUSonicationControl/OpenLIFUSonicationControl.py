@@ -1256,23 +1256,28 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
     def starting_sonication(self, duration, lifu_interface):
         pre_call_ts = local_clock()
         logging.error(f"[LATENCY] calling start_trigger() at t={pre_call_ts:.6f}")
-        if self._call_hw_with_retry(lifu_interface.txdevice.start_trigger, "start_trigger"):
-            post_call_ts = local_clock()
-            logging.error(f"[LATENCY] start_trigger() returned at t={post_call_ts:.6f} (call took {(post_call_ts - pre_call_ts) * 1000:.1f}ms)")
-            logging.error("Trigger Running...")
+        trigger_started = self._call_hw_with_retry(lifu_interface.txdevice.start_trigger, "start_trigger")
+        if not trigger_started:
+            logging.error("Failed to start trigger after retries -- aborting run.")
+            self._abort_due_to_hw_failure()
+            return
 
+        post_call_ts = local_clock()
+        logging.error(f"[LATENCY] start_trigger() returned at t={post_call_ts:.6f} (call took {(post_call_ts - pre_call_ts) * 1000:.1f}ms)")
+        logging.error("Trigger Running...")
+
+        try:
             for i in range(int(duration), 0, -1):
                 logging.error(f"Sonication stopping in {i} seconds")
                 time.sleep(1)
-
+        finally:
+            # Guaranteed even if the wait above raises -- hardware triggering
+            # already started, so it must not be left running unattended.
             if self._call_hw_with_retry(lifu_interface.txdevice.stop_trigger, "stop_trigger"):
                 logging.error("Trigger stopped successfully.")
             else:
                 logging.error("Failed to stop trigger after retries -- aborting run.")
                 self._abort_due_to_hw_failure()
-        else:
-            logging.error("Failed to start trigger after retries -- aborting run.")
-            self._abort_due_to_hw_failure()
 
 
             # # # TODO START SONICATION on HARDWARE
