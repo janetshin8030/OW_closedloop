@@ -45,7 +45,7 @@ XDF_PATH = (
     / "eeg"
     / "sub-dave_run_2_ses-1_task-dave_run_2_run-001_eeg.xdf"
 )
-TRIAL_NAME = 'hardware_enabled_demo'
+TRIAL_NAME = 'dave_run_4'
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
 OUTPUT_DIR = Path(__file__).resolve().parent /"trigger_accuracy_plots"/ f"{TRIAL_NAME}"

@@ -771,7 +771,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         method='sequential', 
         extraInfo=expInfo, 
         originPath=-1, 
-        trialList=data.importConditions('trial_3.xlsx'),
+        trialList=data.importConditions('trial_4.xlsx'),
         seed=None, 
         isTrials=True, 
     )
@@ -817,7 +817,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         from pylsl import local_clock
         last_lifu_event = None
         last_lifu_time = local_clock() 
-        marker_outlet.push_sample(["START_EXPERIMENT"])
+        marker_outlet.push_sample(["trial_start"])
         
         # store start times for N_back_2_trials
         N_back_2_trials.tStartRefresh = win.getFutureFlipTime(clock=globalClock)
@@ -1009,6 +1009,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     # pushes -1.0 on PsychoPy_numeric) so this task saves its data
                     # before exiting, same as pressing Escape below
                     if sample[0] == -1.0:
+                        marker_outlet.push_sample(["STOP_EXPERIMENT"])
                         thisExp.status = FINISHED
 
 
@@ -1180,6 +1181,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         if lifu_inlet is not None:
             _stop_sample, _ = lifu_inlet.pull_sample(timeout=0.0)
             if _stop_sample is not None and _stop_sample[0] == -1.0:
+                marker_outlet.push_sample(["STOP_EXPERIMENT"])
                 thisExp.status = FINISHED
         # check for quit (typically the Esc key)
         if defaultKeyboard.getKeys(keyList=["escape"]):

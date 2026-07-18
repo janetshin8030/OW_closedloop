@@ -52,7 +52,7 @@ into it). The four required streams it configures:
 | `EEG_gpype`        | (data)  | `gp.LSLSender` in `build_pipeline` — 13 channels: raw 1–8 + theta filter, power, smoothed power, z-score, decimated power, trigger      |
 | `EEG_LIFU_events`  | Markers | `StreamOutlet` at the top of the script — `LIFU_ON` / `LIFU_OFF` / `collecting_baseline` / `START_EXPERIMENT_RECEIVED`                |
 | `PsychoPy_numeric` | Markers | `StreamOutlet` at the top of the script — `1.0` / `0.0` numeric ticks matching `LIFU_ON` / `LIFU_OFF`                                 |
-| `PsychoPyMarkers`  | Markers | PsychoPy task itself (e.g. `START_EXPERIMENT`, trial events)                                                                          |
+| `PsychoPyMarkers`  | Markers | PsychoPy task itself (e.g. `trial_start`, trial events)                                                                          |
 
 Setting only `StudyRoot` (and not `StorageLocation`/`PathTemplate`) makes
 LabRecorder assume BIDS mode automatically with its default BIDS template —

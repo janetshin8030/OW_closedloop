@@ -39,7 +39,7 @@ from openlifu.plan.solution import Solution
 # ============================================================
 
 # name convention
-name_and_trial = "sham_run_3"
+name_and_trial = "scott_run_4"
 
 # all XDF output goes here (written by LabRecorder, see start_lab_recorder())
 XDF_DIR = Path("xdf_data")
@@ -577,8 +577,8 @@ THETA_CHANNEL_INDEX = _router_channel_index(ROUTER_INPUT_CHANNELS, "hold")  # ch
 SONICATION_TIME = 5 # seconds
 COOLDOWN_TIME = 15 #sonication time + cooldown time
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
-MU = 1.32
-SIGMA =  3.74
+MU = 2.18
+SIGMA =  6.18
 MAD_THRESHOLD = 10      # for artifact rejection in baseline collection
 ABS_VALUE_CUTOFF = 10 # CHANGE FOR ACTUAL TESTING   # absolute ceiling on theta_val itself, guards against slow drift/corruption that a rolling MAD check can't catch
 INITIAL_CUTOFF = 25.0   # initial power threshold to exclude extreme artifacts
@@ -604,8 +604,8 @@ def listen_for_start_stop():
         sample, ts = inlet.pull_sample(timeout=0.1)
         if sample is None:
             continue
-        if sample[0] == "START_EXPERIMENT":
-            # Only send the START_EXPERIMENT_RECEIVED marker once, even if multiple START_EXPERIMENT markers are received
+        if sample[0] == "trial_start":
+            # Only send the START_EXPERIMENT_RECEIVED marker once, even if multiple trial_start markers are received
             if not psychopy_running:
                 logger.info("Experiment started — enabling LIFU.")
                 eeg_trigger_outlet.push_sample(["START_EXPERIMENT_RECEIVED"])
