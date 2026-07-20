@@ -575,7 +575,7 @@ THETA_CHANNEL_INDEX = _router_channel_index(ROUTER_INPUT_CHANNELS, "hold")  # ch
 # ============================================================
 
 SONICATION_TIME = 5 # seconds
-COOLDOWN_TIME = 10 #sonication time + cooldown time
+COOLDOWN_TIME = 15 #sonication time + cooldown time
 THETA_THRESHOLD_Z = 1.5    # z-score threshold
 MU = 2.32
 SIGMA =  6.60
