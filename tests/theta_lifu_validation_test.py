@@ -241,7 +241,7 @@ def test_recorded_trigger_replay_matches_online_markers():
 # diffing against a reference.
 FS = 250.0
 DT = 1.0 / FS
-TOLERANCE_S = 0.01  # 10ms: comfortably above float/grid rounding, tight vs. a 15s cooldown
+TOLERANCE_S = 0.005  # 10ms: comfortably above float/grid rounding, tight vs. a 15s cooldown
 
 
 def _sine_values(n, center, amplitude, freq_hz):
