@@ -9,9 +9,9 @@ import gpype as gp
 # main issue is that if in the beginning it makes the MAD too small, it will never adjust properly
 hash_and_test = "2back"
 DURATION = 100  # seconds
-BUFFER_SIZE = 200
-MAD_THRESHOLD = 6
-INITIAL_CUTOFF = 100.0  # initial power threshold to exclude extreme artifacts during early collection
+BUFFER_SIZE = 500
+MAD_THRESHOLD = 10
+INITIAL_CUTOFF = 25.0  # initial power threshold to exclude extreme artifacts during early collection
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

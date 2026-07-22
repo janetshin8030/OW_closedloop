@@ -1257,6 +1257,8 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         pre_call_ts = local_clock()
         logging.error(f"[LATENCY] calling start_trigger() at t={pre_call_ts:.6f}")
         trigger_started = self._call_hw_with_retry(lifu_interface.txdevice.start_trigger, "start_trigger")
+        voltage = lifu_interface.hvcontroller.get_voltage() # for debugging --> see if voltage drops
+        logging.error(f"Voltage: {voltage}")
         if not trigger_started:
             logging.error("Failed to start trigger after retries -- aborting run.")
             self._abort_due_to_hw_failure()
@@ -1265,7 +1267,7 @@ class OpenLIFUSonicationControlLogic(ScriptedLoadableModuleLogic):
         post_call_ts = local_clock()
         logging.error(f"[LATENCY] start_trigger() returned at t={post_call_ts:.6f} (call took {(post_call_ts - pre_call_ts) * 1000:.1f}ms)")
         logging.error("Trigger Running...")
-
+        logging.error(f"Voltage: {voltage}")
         try:
             for i in range(int(duration), 0, -1):
                 logging.error(f"Sonication stopping in {i} seconds")
