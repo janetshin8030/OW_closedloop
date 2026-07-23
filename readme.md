@@ -62,10 +62,13 @@ see "Filename template" below — so `start_lab_recorder()`'s runtime RCS
 ## Per-run workflow (automated)
 
 `main_pipeline.py` now drives both the PsychoPy task and LabRecorder for you.
-Just run `python main_pipeline.py` (add `--hardware-enabled` if you want the
-real transducer armed). Startup happens in this order:
+Set `name_and_trial` near the top of `main_pipeline.py` to your
+participant/run label (used for XDF/LabRecorder/PsychoPy filenames), then run
+`python main_pipeline.py` (add `--hardware-enabled` if you want the real
+transducer armed). Startup happens in this order:
 
-1. Hardware init (if `--hardware-enabled`), then the theta/LIFU-marker/EEG
+1. Hardware init (if `--hardware-enabled` — requires `OW_OPENLIFU_DB` to be
+   set to your OpenLIFU-python `db_dvc` directory), then the theta/LIFU-marker/EEG
    background threads start and begin listening.
 
 For a **sham (placebo) run**, pass `--sham-run`. Everything else runs
@@ -77,11 +80,14 @@ transducer are skipped: `init_hardware()` is not called (if
 LIFU device never sonicates.
 2. **PsychoPy task launches** via `start_psychopy()` — by default
    `n-back-task-with-visual-stimuli/N-back_lastrun.py`, run with the separate
-   PsychoPy Python at `C:\Users\jshin\python.exe` (not the interpreter running
-   `main_pipeline.py` — that one doesn't have the `psychopy` package; override
-   with `OW_PSYCHOPY_PYTHON` if this moves), with its participant field
-   pre-filled to the script's `name_and_trial` (via `OW_PARTICIPANT`, read by
-   a small patch near the top of `N-back_lastrun.py`/`stroop_lastrun.py`). Its
+   PsychoPy standalone interpreter (not the one running `main_pipeline.py` —
+   that one doesn't have the `psychopy` package). There's no portable default
+   for that interpreter's path, so you must set `OW_PSYCHOPY_PYTHON` to it
+   (e.g. `C:\Users\<you>\AppData\Local\Programs\PsychoPy\python.exe`) before
+   running with PsychoPy auto-launch enabled — `start_psychopy()` logs a
+   warning and lets you start the task by hand if it's unset. Its participant
+   field is pre-filled from `name_and_trial` (via `OW_PARTICIPANT`, read by a
+   small patch near the top of `N-back_lastrun.py`/`stroop_lastrun.py`). Its
    info dialog still pops up so you can confirm/adjust session number, then
    click OK to open the task window as usual. Set `OW_PSYCHOPY_SCRIPT` to
    point at `stroop/stroop_lastrun.py` instead, or

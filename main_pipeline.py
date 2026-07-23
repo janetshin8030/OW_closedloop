@@ -38,8 +38,9 @@ from openlifu.plan.solution import Solution
 # Run configuration (paths, output dirs, mode flags)
 # ============================================================
 
-# name convention
-name_and_trial = "scott_run_4"
+# Participant/run label used for XDF, LabRecorder, and PsychoPy filenames.
+# Edit this by hand before each run.
+name_and_trial = "run_1"
 
 # all XDF output goes here (written by LabRecorder, see start_lab_recorder())
 XDF_DIR = Path("xdf_data")
@@ -291,9 +292,12 @@ def stop_lab_recorder(proc: subprocess.Popen | None, started: bool) -> None: # C
 # OW_NO_PSYCHOPY=1 to skip auto-launching it and start the task by hand.
 PSYCHOPY_SCRIPT = Path(os.environ.get(
     "OW_PSYCHOPY_SCRIPT",
-    r"C:\Users\jshin\OW_closedloopLIFU\n-back-task-with-visual-stimuli\N-back_lastrun.py",
+    str(Path(__file__).resolve().parent / "n-back-task-with-visual-stimuli" / "N-back_lastrun.py"),
 ))
-PSYCHOPY_PYTHON = Path(os.environ.get("OW_PSYCHOPY_PYTHON", r"C:\Users\jshin\python.exe"))
+# No portable default exists for the PsychoPy standalone interpreter -- it's
+# an external install, not part of this repo. Must be set via env var.
+_psychopy_python_override = os.environ.get("OW_PSYCHOPY_PYTHON")
+PSYCHOPY_PYTHON = Path(_psychopy_python_override) if _psychopy_python_override else None
 
 
 def start_psychopy() -> subprocess.Popen | None:
@@ -305,10 +309,11 @@ def start_psychopy() -> subprocess.Popen | None:
     if not PSYCHOPY_SCRIPT.exists():
         logger.warning("PsychoPy script not found at %s; start it manually.", PSYCHOPY_SCRIPT)
         return None
-    if not PSYCHOPY_PYTHON.exists():
+    if PSYCHOPY_PYTHON is None or not PSYCHOPY_PYTHON.exists():
         logger.warning(
-            "PsychoPy Python not found at %s (set OW_PSYCHOPY_PYTHON); start the task manually.",
-            PSYCHOPY_PYTHON,
+            "PsychoPy Python not found%s; set OW_PSYCHOPY_PYTHON to its path or start the "
+            "task manually.",
+            f" at {PSYCHOPY_PYTHON}" if PSYCHOPY_PYTHON is not None else "",
         )
         return None
 
@@ -395,6 +400,13 @@ def trigger_slicer_stop(timeout: float = 5.0) -> bool:
 # LIFU hardware init
 # ============================================================
 
+# No portable default exists for the OpenLIFU db_dvc directory -- it's an
+# external asset, not part of this repo. Must be set via env var (or passed
+# to init_hardware(db_path=...) directly).
+_openlifu_db_override = os.environ.get("OW_OPENLIFU_DB")
+OPENLIFU_DB_PATH = Path(_openlifu_db_override) if _openlifu_db_override else None
+
+
 def init_hardware(
     db_path: Path | None = None,
     num_modules: int = 1,
@@ -410,7 +422,12 @@ def init_hardware(
     """initializes hardware on python if hardware_enabled"""
     #peak_to_peak_voltage = voltage * 2
     if db_path is None:
-        db_path = Path(r"C:\Users\jshin\Downloads\OpenLIFU-python\OpenLIFU-python\db_dvc")
+        if OPENLIFU_DB_PATH is None:
+            raise RuntimeError(
+                "OpenLIFU database path not set. Pass db_path= explicitly or set "
+                "OW_OPENLIFU_DB to your OpenLIFU-python db_dvc directory."
+            )
+        db_path = OPENLIFU_DB_PATH
     db = Database(db_path)
     arr = db.load_transducer(f"openlifu_{num_modules}x400_evt1")
     arr.sort_by_pin()
