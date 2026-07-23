@@ -1,0 +1,1103 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Closed-Loop EEG-Guided Open-LIFU — Research Poster</title>
+<!-- CUSTOMIZE ME: edit copy inline below. Section ids match nav hrefs. Images are injected as data URIs by inject_images.py. -->
+<style>
+  :root{
+    --black:#000000;
+    --hairline: rgba(255,255,255,0.14);
+    --ink-faint:#7A7A7A;
+    --blue:#4D9FFF;
+    --blue-deep:#2563EB;
+    --white:#FFFFFF;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;
+    --mono:'SF Mono','Cascadia Code',Consolas,'Liberation Mono',monospace;
+    /* Committed single theme: black, white, blue. --blue for text/icons on dark (7.7:1 contrast),
+       --blue-deep for badge/button backgrounds under white text (5.2:1 contrast). */
+    --bg:#000000;
+    --bg-panel:#141414;
+    --bg-sunken:#0A0A0A;
+    --fg:#F7F7F7;
+    --fg-soft:#ADADAD;
+    --line: rgba(255,255,255,0.12);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--fg); font-family:var(--sans);
+    font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{ font-family:var(--sans); font-weight:800; letter-spacing:-0.02em; text-wrap:balance; margin:0; }
+  p{margin:0 0 0.85em 0; max-width:60ch;}
+  p:last-child{margin-bottom:0;}
+  :focus-visible{outline:2px solid var(--blue); outline-offset:2px;}
+  button{font-family:var(--sans);}
+
+  .eyebrow{
+    font-family:var(--mono); font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--blue); font-weight:700;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+
+  /* ---------------- NAV ---------------- */
+  .navbar{
+    position:sticky; top:0; z-index:50; background:var(--black);
+    border-bottom:1px solid var(--hairline);
+  }
+  .navbar-inner{
+    max-width:1080px; margin:0 auto; padding:14px 24px;
+    display:flex; align-items:center; gap:22px;
+  }
+  .nav-brand{ display:flex; align-items:center; gap:9px; font-weight:800; color:#fff; font-size:0.92rem; letter-spacing:-0.01em; white-space:nowrap; }
+  .nav-mark{width:20px; height:20px; flex:none;}
+  .nav-links{ display:flex; gap:4px; margin-left:auto; }
+  .nav-pill{
+    font-size:0.82rem; font-weight:600; color:rgba(255,255,255,0.62); text-decoration:none;
+    padding:7px 13px; border-radius:100px; transition:background .15s, color .15s; white-space:nowrap;
+  }
+  .nav-pill:hover{color:#fff;}
+  .nav-pill.active{background:rgba(255,255,255,0.1); color:#fff;}
+  @media (max-width:640px){ .nav-links{gap:0;} .nav-pill{padding:6px 8px; font-size:0.76rem;} }
+
+  /* ---------------- HERO ---------------- */
+  .hero{
+    position:relative; overflow:hidden; background:var(--black); color:#fff;
+    padding:88px 0 56px 0;
+  }
+  .hero canvas{position:absolute; inset:0; width:100%; height:100%; opacity:0.55;}
+  .hero-inner{position:relative; z-index:2;}
+  .hero .eyebrow{color:var(--blue);}
+  .hero h1{
+    font-size:clamp(2.1rem,5.2vw,3.7rem); line-height:1.03; max-width:15ch; margin-top:14px; color:#fff;
+  }
+  .hero-lines{margin-top:22px; display:flex; flex-direction:column; gap:2px;}
+  .hero-lines span{ display:block; font-size:clamp(1.05rem,2vw,1.3rem); font-weight:600; color:rgba(255,255,255,0.82); }
+  .hero-byline{ margin-top:24px; font-family:var(--mono); font-size:0.82rem; color:rgba(255,255,255,0.5); }
+  .hero-byline b{color:rgba(255,255,255,0.85); font-weight:600;}
+
+  .stat-row{
+    margin-top:44px; display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+    border-top:1px solid var(--hairline);
+  }
+  .stat{ padding:20px 18px 0 0; }
+  .stat .num{
+    font-size:clamp(1.5rem,3vw,2.15rem); font-weight:800; color:var(--blue);
+    font-variant-numeric:tabular-nums; letter-spacing:-0.01em;
+  }
+  .stat .label{font-size:0.78rem; color:rgba(255,255,255,0.55); margin-top:5px; max-width:20ch; line-height:1.35;}
+  @media (max-width:700px){ .stat-row{grid-template-columns:repeat(2,1fr); row-gap:22px;} }
+
+  .obj-strip{
+    margin-top:34px; padding-top:26px; border-top:1px solid var(--hairline);
+    display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start;
+  }
+  .obj-strip p{color:rgba(255,255,255,0.68); font-size:0.92rem; max-width:46ch;}
+  .hyp-badges{display:flex; flex-direction:column; gap:14px; flex:1 1 260px;}
+  .hyp{display:flex; flex-direction:column; gap:3px; font-size:0.82rem; color:rgba(255,255,255,0.68);}
+  .hyp b{
+    font-family:var(--mono); font-size:0.66rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--blue); font-weight:700;
+  }
+
+  /* ---------------- SECTIONS ---------------- */
+  section.block{padding:60px 0;}
+  section.block + section.block{border-top:1px solid var(--line);}
+  .section-head{ max-width:70ch; margin-bottom:30px; }
+  .section-head h2{ font-size:clamp(1.5rem,3vw,2.15rem); margin-top:8px; }
+  .section-head .lede{ color:var(--fg-soft); font-size:1rem; margin-top:10px; max-width:56ch; }
+
+  /* ---------------- WHY LIFU: modality comparison ---------------- */
+  .modality-compare{
+    display:flex; flex-direction:column; gap:1px; margin-top:18px; background:var(--line);
+    border:1px solid var(--line); border-radius:14px; overflow:hidden;
+  }
+  .mod-row{
+    display:grid; grid-template-columns:88px 1fr 1.4fr; gap:16px; align-items:center;
+    background:var(--bg-panel); padding:16px 20px;
+  }
+  .mod-row.good{background:var(--bg-sunken);}
+  .mod-name{font-family:var(--sans); font-weight:800; font-size:1rem; letter-spacing:-0.01em;}
+  .mod-row.good .mod-name{color:var(--blue);}
+  .mod-mech{font-family:var(--mono); font-size:0.78rem; color:var(--fg-soft);}
+  .mod-effect{display:flex; align-items:flex-start; gap:10px; font-size:0.88rem; color:var(--fg-soft);}
+  .mod-effect b{color:var(--fg); font-weight:600;}
+  .mod-icon{
+    flex:none; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:0.72rem; font-weight:800; margin-top:1px;
+  }
+  .mod-row.good .mod-icon{background:var(--blue-deep); color:#fff;}
+  .mod-row:not(.good) .mod-icon{background:var(--bg-sunken); color:var(--ink-faint); border:1px solid var(--line);}
+  @media (max-width:700px){
+    .mod-row{grid-template-columns:1fr; gap:6px;}
+    .mod-mech{order:2;}
+    .mod-effect{order:3;}
+  }
+
+  .mini-cards{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:22px;}
+  @media (max-width:700px){.mini-cards{grid-template-columns:1fr;}}
+  .mini-card{background:var(--bg-sunken); border:1px solid var(--line); border-radius:12px; padding:16px 18px;}
+  .mini-card .tag{font-family:var(--mono); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--blue); font-weight:700;}
+  .mini-card p{font-size:0.88rem; color:var(--fg-soft); margin:6px 0 0 0;}
+
+  /* ---------------- PIPELINE STEPPER ---------------- */
+  .stepper{display:flex; flex-direction:column; gap:0; border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:8px;}
+  .step{border-bottom:1px solid var(--line);}
+  .step:last-child{border-bottom:none;}
+  .step-head{
+    display:flex; align-items:center; gap:16px; width:100%; text-align:left; background:var(--bg-panel);
+    border:none; padding:16px 20px; cursor:pointer; color:var(--fg);
+  }
+  .step-head:hover{background:var(--bg-sunken);}
+  .step-num{
+    font-family:var(--mono); font-size:0.76rem; font-weight:800; color:var(--blue);
+    background:var(--bg-sunken); width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .step-head h4{font-size:0.98rem; flex:1;}
+  .step-head .tick{color:var(--fg-faint); font-size:1.1rem; transition:transform .18s; color:var(--ink-faint);}
+  .step.open .step-head .tick{transform:rotate(45deg);}
+  .step-body{ display:none; padding:0 20px 20px 66px; background:var(--bg-panel);}
+  .step.open .step-body{display:block;}
+  .step-body p{color:var(--fg-soft); font-size:0.9rem;}
+
+  .gate-strip{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:14px;}
+  .gate-dot{
+    font-family:var(--mono); font-size:0.72rem; font-weight:700; color:var(--fg-soft);
+    background:var(--bg-sunken); border:1px solid var(--line); border-radius:100px; padding:7px 12px;
+    cursor:help;
+  }
+  .gate-and{font-family:var(--mono); font-size:0.72rem; color:var(--ink-faint);}
+
+  /* ---------------- LIVE TRIGGER SIMULATOR ---------------- */
+  .sim{margin-top:14px; background:var(--bg-sunken); border:1px solid var(--line); border-radius:12px; padding:16px;}
+  .sim-canvas-wrap{position:relative;}
+  .sim-canvas-wrap canvas{width:100%; height:130px; display:block; border-radius:8px; background:var(--bg-panel);}
+  .sim-badge{
+    position:absolute; top:10px; right:10px; font-family:var(--mono); font-size:0.66rem; font-weight:800;
+    letter-spacing:0.06em; padding:4px 10px; border-radius:100px; background:var(--bg-sunken); color:var(--fg-soft);
+    border:1px solid var(--line); transition:background .15s, color .15s, border-color .15s;
+  }
+  .sim-badge.fire{background:var(--blue-deep); color:#fff; border-color:var(--blue-deep);}
+  .sim-gate{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:12px;}
+  .gate-dot.live{cursor:default; transition:background .15s, color .15s, border-color .15s;}
+  .gate-dot.live.pass{background:var(--blue-deep); border-color:var(--blue-deep); color:#fff;}
+  .sim-controls{display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:12px;}
+  .sim-btn{
+    font-family:var(--mono); font-size:0.76rem; font-weight:700; padding:7px 14px; border-radius:8px;
+    border:1px solid var(--line); background:var(--bg-panel); color:var(--fg); cursor:pointer;
+  }
+  .sim-btn:hover{border-color:var(--blue);}
+  .sim-btn.ghost{background:none;}
+  .sim-count{font-family:var(--mono); font-size:0.78rem; color:var(--fg-soft); margin-left:auto;}
+  .sim-count b{color:var(--fg); font-variant-numeric:tabular-nums;}
+  .sim-note{font-size:0.74rem; color:var(--ink-faint); margin-top:8px;}
+
+  details.tech{ margin-top:22px; border:1px solid var(--line); border-radius:12px; background:var(--bg-panel); }
+  details.tech summary{
+    cursor:pointer; padding:15px 18px; font-weight:700; font-size:0.9rem; list-style:none;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  details.tech summary::-webkit-details-marker{display:none;}
+  details.tech summary::after{content:'+'; font-family:var(--mono); font-weight:700; font-size:1.1rem; color:var(--ink-faint); transition:transform .15s;}
+  details.tech[open] summary::after{transform:rotate(45deg);}
+  .tech-body{padding:4px 18px 20px 18px;}
+  .tech-body h5{font-size:0.85rem; margin:18px 0 8px 0;}
+  .tech-body h5:first-child{margin-top:0;}
+  .table-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px;}
+  table{border-collapse:collapse; width:100%; min-width:460px; font-size:0.86rem;}
+  thead th{
+    text-align:left; font-family:var(--mono); font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:700; padding:10px 14px; background:var(--bg-sunken); border-bottom:1px solid var(--line); white-space:nowrap;
+  }
+  tbody td{padding:10px 14px; border-bottom:1px solid var(--line); color:var(--fg-soft);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr td:first-child{color:var(--fg); font-weight:600;}
+  .num-cell{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .tech-body ul.plain{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px;}
+  .tech-body ul.plain li{font-size:0.86rem; color:var(--fg-soft); padding-left:14px; position:relative;}
+  .tech-body ul.plain li::before{content:''; position:absolute; left:0; top:0.55em; width:5px; height:5px; border-radius:50%; background:var(--blue);}
+  .tech-body .mono-line{font-family:var(--mono); font-size:0.8rem; color:var(--fg-soft); margin-top:6px;}
+
+  /* ---------------- RESULTS TABS ---------------- */
+  .tabbar{display:flex; flex-wrap:wrap; gap:6px; border-bottom:1px solid var(--line); padding-bottom:0; margin-top:6px;}
+  .tabbtn{
+    font-size:0.86rem; font-weight:700; color:var(--fg-soft); background:none; border:none;
+    padding:11px 4px; margin-right:20px; cursor:pointer; position:relative; top:1px;
+    border-bottom:2px solid transparent;
+  }
+  .tabbtn.active{color:var(--blue); border-bottom-color:var(--blue);}
+  .tabpanel{display:none; padding-top:26px;}
+  .tabpanel.active{display:block;}
+
+  .key-finding{
+    display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:0.68rem;
+    letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:#fff;
+    background:var(--blue-deep); padding:4px 10px; border-radius:100px; margin-bottom:14px;
+  }
+
+  .fig{background:var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:12px;}
+  .fig img{width:100%; display:block; border-radius:8px; background:#fff; cursor:zoom-in;}
+  .fig video{width:100%; display:block; border-radius:8px; background:#000;}
+  .fig figcaption{font-size:0.82rem; color:var(--fg-soft); margin-top:10px; line-height:1.45;}
+  .fig figcaption b{color:var(--fg);}
+  .step-media{display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;}
+  .step-media .fig{flex:0 0 300px; max-width:300px;}
+  .step-media p{flex:1 1 260px; margin:0;}
+  .fig.highlight{
+    background: color-mix(in srgb, var(--blue) 10%, var(--bg-panel));
+    border-color: var(--blue);
+  }
+  .two-col{display:grid; grid-template-columns:1.1fr 1fr; gap:20px; align-items:start;}
+  @media (max-width:800px){.two-col{grid-template-columns:1fr;}}
+
+  .toggle-row{display:flex; gap:8px; margin-bottom:12px;}
+  .toggle-btn{
+    font-family:var(--mono); font-size:0.76rem; font-weight:700; padding:8px 14px; border-radius:8px;
+    border:1px solid var(--line); background:var(--bg-sunken); color:var(--fg-soft); cursor:pointer;
+  }
+  .toggle-btn.active{background:var(--blue-deep); border-color:var(--blue-deep); color:#fff;}
+  .fig img.swap-img{display:none;}
+  .fig img.swap-img.active{display:block;}
+  .range-plot{width:100%; height:auto; margin-top:10px;}
+
+  /* ---------------- COMPARE SLIDER (artifact before/after) ---------------- */
+  .compare-slider{
+    position:relative; border-radius:8px; overflow:hidden; cursor:ew-resize; user-select:none;
+    background:#fff; touch-action:pan-y;
+  }
+  .compare-slider:focus-visible{outline:2px solid var(--blue); outline-offset:3px;}
+  .compare-slider img{display:block; width:100%; pointer-events:none;}
+  .cs-overlay{position:absolute; top:0; left:0; height:100%; overflow:hidden; width:50%;}
+  .cs-overlay img{position:absolute; top:0; left:0; height:100%; width:auto; max-width:none;}
+  .cs-handle{
+    position:absolute; top:0; left:50%; height:100%; width:0; transform:translateX(-50%);
+    border-left:2px solid var(--blue); pointer-events:none;
+  }
+  .cs-grip{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:32px; height:32px; border-radius:50%;
+    background:var(--blue-deep); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:0.9rem; box-shadow:0 2px 8px rgba(0,0,0,0.35);
+  }
+  .cs-tag{
+    position:absolute; top:10px; font-family:var(--mono); font-size:0.68rem; font-weight:800; letter-spacing:0.04em;
+    text-transform:uppercase; background:rgba(0,0,0,0.72); color:#fff; padding:5px 10px; border-radius:100px;
+    pointer-events:none;
+  }
+  .cs-tag.left{left:10px;}
+  .cs-tag.right{right:10px;}
+
+  .bar-block{display:flex; flex-direction:column; gap:6px; margin-top:6px;}
+  .bar-item{border-radius:6px;}
+  button.bar-row{
+    display:grid; grid-template-columns:100px 1fr 52px; align-items:center; gap:10px; font-size:0.8rem;
+    background:none; border:none; padding:4px; margin:0; font:inherit; text-align:left; width:100%;
+    cursor:pointer; border-radius:6px; color:inherit;
+  }
+  button.bar-row:hover{background:var(--bg-panel);}
+  .bar-row .rlabel{color:var(--fg-soft); font-family:var(--mono); font-size:0.72rem;}
+  .bar-track{background:var(--bg-sunken); border-radius:6px; height:12px; overflow:hidden; border:1px solid var(--line);}
+  .bar-fill{height:100%; border-radius:6px 0 0 6px;}
+  .bar-fill.active{background:var(--blue);}
+  .bar-fill.sham{background:var(--ink-faint);}
+  .bar-row .rval{font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--fg); text-align:right;}
+  .bar-detail{
+    display:none; font-family:var(--mono); font-size:0.72rem; color:var(--fg-soft);
+    padding:4px 4px 8px 4px; border-bottom:1px dashed var(--line);
+  }
+  .bar-item.open .bar-detail{display:block;}
+  .bar-hint{font-size:0.7rem; color:var(--ink-faint); margin-top:2px;}
+  .legend-row{display:flex; gap:14px; margin-top:8px; font-size:0.76rem; color:var(--fg-soft);}
+  .legend-row span{display:inline-flex; align-items:center; gap:6px;}
+  .legend-row i{width:9px; height:9px; border-radius:3px; display:inline-block;}
+
+  /* ---------------- LIMITS ---------------- */
+  .limits-list{display:grid; grid-template-columns:1fr 1fr; gap:12px 28px; margin-top:6px;}
+  @media (max-width:700px){.limits-list{grid-template-columns:1fr;}}
+  .limit-item{font-size:0.92rem; color:var(--fg-soft); padding-left:16px; position:relative;}
+  .limit-item::before{content:''; position:absolute; left:0; top:0.5em; width:6px; height:6px; border-radius:50%; background:var(--blue);}
+  .limit-item b{color:var(--fg);}
+
+  /* ---------------- FOOTER ---------------- */
+  footer{background:var(--black); color:rgba(255,255,255,0.7); padding:44px 0 40px 0;}
+  footer .wrap{display:flex; flex-direction:column; gap:18px;}
+  footer p{max-width:70ch; font-size:0.86rem; color:rgba(255,255,255,0.62);}
+  details.ack summary{
+    cursor:pointer; color:var(--blue); font-family:var(--mono); font-size:0.78rem; font-weight:700; list-style:none;
+  }
+  details.ack summary::-webkit-details-marker{display:none;}
+  .ack-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:16px;}
+  @media (max-width:820px){.ack-grid{grid-template-columns:repeat(2,1fr);}}
+  .ack-grid h5{font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--blue); margin-bottom:8px; font-family:var(--mono);}
+  .ack-grid p{font-size:0.8rem; color:rgba(255,255,255,0.6); margin-bottom:6px;}
+  .ack-grid p b{color:rgba(255,255,255,0.85);}
+  .foot-meta{display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-family:var(--mono); font-size:0.74rem; color:rgba(255,255,255,0.4); border-top:1px solid var(--hairline); padding-top:18px;}
+
+  /* ---------------- LIGHTBOX ---------------- */
+  .lightbox{position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:100; display:none; align-items:center; justify-content:center; padding:40px; cursor:zoom-out;}
+  .lightbox.open{display:flex;}
+  .lightbox img{max-width:100%; max-height:100%; border-radius:8px; background:#fff; box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important;} }
+</style>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <span class="nav-brand">
+      <svg class="nav-mark" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="#4D9FFF"/><circle cx="12" cy="12" r="7" stroke="#4D9FFF" stroke-width="1.3" opacity="0.6"/><circle cx="12" cy="12" r="11" stroke="#4D9FFF" stroke-width="1" opacity="0.3"/></svg>
+      OW&#8209;DEV&#8209;001
+    </span>
+    <div class="nav-links" id="navLinks">
+      <a class="nav-pill" href="#why">Why LIFU</a>
+      <a class="nav-pill" href="#pipeline">Pipeline</a>
+      <a class="nav-pill" href="#proof">Proof</a>
+      <a class="nav-pill" href="#limits">Limits</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <canvas id="waveCanvas"></canvas>
+  <div class="wrap hero-inner">
+    <span class="eyebrow">Closed-Loop EEG-Guided Open-LIFU &middot; Feasibility Pilot</span>
+    <h1>Stimulate the Brain Without Ever Losing Signal</h1>
+    <div class="hero-lines">
+      <span>Frontal theta triggers the pulse.</span>
+      <span>Focused ultrasound delivers it.</span>
+      <span>The EEG stays clean the entire time.</span>
+    </div>
+    <div class="hero-byline"><b>Janet Shin</b> &middot; Openwater Research &middot; 2-back working-memory task, n=2 pilot</div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="num">422ms</div><div class="label">mean latency</div></div>
+      <div class="stat"><div class="num">&lt;5ms</div><div class="label">trigger accuracy</div></div>
+      <div class="stat"><div class="num">2</div><div class="label">in-house participants</div></div>
+      <div class="stat"><div class="num">z-score&gt;1.5</div><div class="label">individualized theta trigger threshold</div></div>
+    </div>
+
+    <div class="obj-strip">
+      <p>The first in-house experiment we've run on human participants under our own IRB &mdash; evaluating real-time frontal-theta detection and low-latency Open-LIFU triggering during a 2-back working-memory task.</p>
+      <div class="hyp-badges">
+        <div class="hyp"><b>Primary hypothesis</b> Frontal theta can be detected in real time reliably enough to trigger temporally contingent Open-LIFU.</div>
+        <div class="hyp"><b>Exploratory hypothesis</b> Active Open‑LIFU triggering may produce short‑term, event‑locked changes in frontal theta power and measurable shifts in task performance.</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- WHY LIFU -->
+  <section class="block" id="why">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Why LIFU</span>
+        <h2>Other stimulation methods drown the EEG in artifacts. This one doesn't.</h2>
+        <p class="lede">Four ways to stimulate the brain. Only one lets the EEG keep reading while it fires.</p>
+      </div>
+
+      <div class="modality-compare">
+        <div class="mod-row good">
+          <span class="mod-name">LIFU</span>
+          <span class="mod-mech">Acoustic (mechanical) wave</span>
+          <span class="mod-effect"><span class="mod-icon">&#10003;</span><span><b>EEG stays clean.</b> No electromagnetic interference, so the closed loop keeps reading in real time while it stimulates.</span></span>
+        </div>
+        <div class="mod-row">
+          <span class="mod-name">TMS</span>
+          <span class="mod-mech">High-intensity magnetic pulse</span>
+          <span class="mod-effect"><span class="mod-icon">&#10005;</span><span><b>Blinds the EEG.</b> Saturates nearby sensors, disrupting real-time monitoring during the pulse.</span></span>
+        </div>
+        <div class="mod-row">
+          <span class="mod-name">DBS</span>
+          <span class="mod-mech">Implanted high-frequency current</span>
+          <span class="mod-effect"><span class="mod-icon">&#10005;</span><span><b>Contaminates the signal.</b> Surgically implanted electrodes inject large artifacts directly into scalp recordings.</span></span>
+        </div>
+        <div class="mod-row">
+          <span class="mod-name">tDCS</span>
+          <span class="mod-mech">Continuous scalp current</span>
+          <span class="mod-effect"><span class="mod-icon">&#10005;</span><span><b>Drowns out the signal.</b> Polarizes the skin&ndash;electrode interface, causing persistent baseline drift.</span></span>
+        </div>
+      </div>
+
+      <div class="mini-cards">
+        <div class="mini-card">
+          <span class="tag">Trigger biomarker</span>
+          <p>Frontal theta (4&ndash;7 Hz)  midline power scales with working-memory load and is reproducible session to session.</p>
+        </div>
+        <div class="mini-card">
+          <span class="tag">Stimulation target</span>
+          <p>Left dlPFC via the F3 scalp site, the brain's working-memory hub.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section class="block" id="pipeline">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Protocol &amp; Pipeline Design</span>
+        <h2>One clock. Four programs. Zero manual handoffs.</h2>
+        <p class="lede">Every component talks over named Lab Streaming Layer streams instead of being hard-wired. Tap a stage to see how it works.</p>
+      </div>
+
+      <div class="stepper" id="stepper">
+        <div class="step open">
+          <button class="step-head"><span class="step-num">1</span><h4>g.tec BCI Core 8 + g.Pype: acquisition &amp; processing</h4><span class="tick">+</span></button>
+          <div class="step-body">
+            <div class="step-media">
+              <figure class="fig" style="margin:0; background:#fff;">
+                <img src="__IMG_GTEC__" alt="g.tec Unicorn Hybrid Black 8-channel EEG headset, amplifier side view" loading="lazy" />
+                <figcaption>The 8-channel EEG headset that feeds the pipeline.</figcaption>
+              </figure>
+              <p>The g.tec BCI Core 8 streams 8 raw EEG channels out over LSL. g.Pype takes the lead channel through 60&nbsp;Hz notch &rarr; 4&ndash;7&nbsp;Hz theta bandpass &rarr; power extraction &rarr; 50-sample moving average &rarr; decimate to 25&nbsp;fps, while all raw and processed channels are recorded natively. Output is a clean, individualized z-score baseline (&mu;, &sigma;) from a 100-second resting calibration.</p>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <button class="step-head"><span class="step-num">2</span><h4>main_pipeline.py: the trigger loop</h4><span class="tick">+</span></button>
+          <div class="step-body">
+            <p>MAD-based artifact gating, then a six-condition AND gate must all read true before anything fires. This is the actual logic, running live on a simulated theta z-score:</p>
+            <div class="sim">
+              <div class="sim-canvas-wrap">
+                <canvas id="simCanvas"></canvas>
+                <div class="sim-badge" id="simBadge">ARMED</div>
+              </div>
+              <div class="sim-gate" id="simGate">
+                <span class="gate-dot live pass" data-cond="0" title="Initial 200-sample buffer collection has completed.">1 baseline ready</span>
+                <span class="gate-and">AND</span>
+                <span class="gate-dot live pass" data-cond="1" title="PsychoPy experiment has started and has not terminated.">2 task active</span>
+                <span class="gate-and">AND</span>
+                <span class="gate-dot live" data-cond="2" title="Real-time theta z-score exceeds baseline.">3 z&gt;1.5</span>
+                <span class="gate-and">AND</span>
+                <span class="gate-dot live pass" data-cond="3" title="Prevents firing if baseline MAD drifts out of range.">4 z&lt;10 ceiling</span>
+                <span class="gate-and">AND</span>
+                <span class="gate-dot live pass" data-cond="4" title="Time since last sonication exceeds the enforced cooldown.">5 cooldown clear</span>
+                <span class="gate-and">AND</span>
+                <span class="gate-dot live pass" data-cond="5" title="Cumulative sonications for the session haven't hit the max.">6 budget remains</span>
+              </div>
+              <div class="sim-controls">
+                <button class="sim-btn" id="simToggle">Pause</button>
+                <button class="sim-btn ghost" id="simReset">Reset</button>
+                <span class="sim-count">Sonications fired: <b id="simFireCount">0</b></span>
+              </div>
+              <p class="sim-note">Cooldown is compressed for this demo (5s). The real pipeline enforces 10&ndash;15s.</p>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <button class="step-head"><span class="step-num">3</span><h4>OpenLIFU + 3D Slicer: actuation</h4><span class="tick">+</span></button>
+          <div class="step-body">
+            <div class="step-media">
+              <figure class="fig" style="margin:0;">
+                <img src="__IMG_SLICER__" alt="3D Slicer with the OpenLIFU targeting module: MRI-registered focal target and beam overlaid on axial, coronal, and sagittal views" loading="lazy" />
+                <figcaption>Target planning in 3D Slicer: the focal spot and beam path registered to the participant's MRI.</figcaption>
+              </figure>
+              <p>3D Slicer hosts a modified OpenLIFUSonicationControl module, the same interface used to register the MRI, plan focus depth and beam steering, and set the acoustic parameter set before a session ever starts. During the task, that module listens for the LSL threshold event and fires the transducer with the pre-planned sonication.</p>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <button class="step-head"><span class="step-num">4</span><h4>PsychoPy: the 2-back task</h4><span class="tick">+</span></button>
+          <div class="step-body">
+            <div class="step-media">
+              <figure class="fig" style="margin:0;">
+                <video src="__VIDEO_2BACK__" autoplay muted loop playsinline controls></video>
+                <figcaption>The 2-back task running in PsychoPy.</figcaption>
+              </figure>
+              <p>A continuous stream of visual stimuli appears one at a time. On each trial, the participant judges whether the current item matches the one shown two trials back. A classic working-memory probe that demands holding, updating, and comparing against a constantly shifting reference point. Difficulty, timing, and stimulus sequencing are held identical across active and sham blocks, so any behavioral difference reflects stimulation condition rather than task design.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="font-size:1.02rem; margin:34px 0 4px 0;">Measured, not estimated</h3>
+      <p class="lede" style="margin-bottom:14px;">Software timestamps can drift from what the hardware actually did. So, we wired the transducer's own trigger line straight into the EEG.</p>
+      <div class="two-col">
+        <figure class="fig" style="margin:0;">
+          <img src="__IMG_TTL_TRIGGER__" alt="Measured TTL pulse train for one sonication burst, showing 24 pulses on channel 8" loading="lazy" />
+          <figcaption><b>The measured pulse train.</b> One sonication burst, captured directly on Ch8. 24 pulses at 5ms on / 195ms rest, exactly matching the protocol's pulse train count.</figcaption>
+        </figure>
+        <div class="fig" style="padding:22px 24px; align-self:center;">
+          <p style="font-size:0.94rem;">To get a latency figure we could actually defend, not just a log entry. So we tapped Open-LIFU's own TTL trigger output and fed it directly into a spare channel on the EEG headset.</p>
+          <p style="font-size:0.88rem; color:var(--fg-soft);">The catch: that line fires a 5V logic pulse, and an EEG front-end is built to read microvolts, not volts. We had to attenuate it down to roughly 100mV before it was safe to feed in, butstrong enough to register clearly on the channel without saturating it. That's how we measured latency directly off hardware, not inferred from software timestamps.</p>
+        </div>
+      </div>
+
+      <details class="tech">
+        <summary>Full protocol appendix</summary>
+        <div class="tech-body">
+          <h5>Acoustic parameter set</h5>
+          <div class="table-scroll">
+            <table>
+              <tbody>
+                <tr><td>Carrier frequency</td><td class="num-cell">400 kHz</td></tr>
+                <tr><td>Target / method</td><td>Left dlPFC; MRI-guided where available, F3 scalp-based otherwise</td></tr>
+                <tr><td>Focus depth</td><td class="num-cell">40 mm (25&ndash;40 mm allowable range)</td></tr>
+                <tr><td>Peak negative pressure</td><td class="num-cell">&le; 0.51 MPa</td></tr>
+                <tr><td>Mechanical Index</td><td class="num-cell">&le; 0.81 cap; pilot sessions delivered at 0.4</td></tr>
+                <tr><td>I<sub>SPTA.3</sub></td><td class="num-cell">&le; 435 mW/cm&sup2; (never &gt; 720)</td></tr>
+                <tr><td>Duty cycle / pulse</td><td class="num-cell">&le;5% &middot; 5ms on / 195ms rest &middot; 24-pulse train</td></tr>
+                <tr><td>Cooldown / budget</td><td class="num-cell">&ge;10&ndash;15s cooldown &middot; 10 triggers/block &middot; 2 blocks/session</td></tr>
+                <tr><td>Sham</td><td>Identical workflow, acoustic output disabled</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h5>Synchronization: four LSL streams, one clock</h5>
+          <ul class="plain">
+            <li><b>EEG_gpype</b>: 8 raw + 5 processed theta channels (13 total)</li>
+            <li><b>EEG_LIFU_events</b>: baseline markers, START_EXPERIMENT_RECEIVED, LIFU_ON/OFF</li>
+            <li><b>PsychoPy Numeric</b>: 1.0/0.0 sonication ticks</li>
+            <li><b>PsychoPy Markers</b>: one marker per trial</li>
+          </ul>
+          <h5>Session design</h5>
+          <p style="font-size:0.86rem; color:var(--fg-soft);">Two sessions per participant, &ge;60 min apart, four blocks each (two active, two sham), counterbalanced:</p>
+          <div class="mono-line">Sequence A: Sham &rarr; Active &rarr; Active &rarr; Sham<br/>Sequence B: Active &rarr; Sham &rarr; Sham &rarr; Active</div>
+          <h5>Safety stop criteria</h5>
+          <p style="font-size:0.86rem; color:var(--fg-soft);">Immediate halt on reported pain, discomfort, dizziness, visual disturbance, neurologic symptoms, a request to stop, device malfunction, coupling failure, or any abnormal system behavior.</p>
+          <h5>Bench-test CLI flags</h5>
+          <ul class="plain">
+            <li><b><code>--sham-run</code></b>: full logging pipeline, acoustic output withheld</li>
+            <li><b><code>--hardware-enabled</code></b>: direct Python hardware control for bench testing only</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- PROOF / RESULTS -->
+  <section class="block" id="proof">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Results &mdash; 2 participants, pilot data</span>
+        <h2>What we actually saw in the loop.</h2>
+        <p class="lede">All findings below are descriptive, feasibility-level observations, not powered for statistical inference.</p>
+      </div>
+
+      <div class="tabbar" id="tabbar">
+        <button class="tabbtn active" data-tab="artifacts">Artifacts</button>
+        <button class="tabbtn" data-tab="timing">Timing</button>
+        <button class="tabbtn" data-tab="theta">Theta</button>
+        <button class="tabbtn" data-tab="erp">ERP</button>
+        <button class="tabbtn" data-tab="behavior">Behavior</button>
+      </div>
+
+      <div class="tabpanel active" data-panel="artifacts">
+        <span class="key-finding">Key finding</span>
+        <h3 style="font-size:1.2rem; margin:0 0 16px 0; max-width:58ch;">The device artifact isn't just small; it's fully separable from theta via ICA.</h3>
+        <div class="two-col">
+          <div>
+            <figure class="fig" style="margin:0;">
+              <div class="compare-slider" id="artifactSlider" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-label="Drag to compare unfiltered vs. filtered EEG spectrogram, or use arrow keys">
+                <img class="cs-base" src="__IMG_ARTIFACT_UNFILTERED__" alt="Wideband PSD showing 60, 70, 120Hz artifact bands during sonication" loading="lazy" />
+                <div class="cs-overlay" id="artifactOverlay">
+                  <img id="artifactOverlayImg" src="__IMG_ARTIFACT_FILTERED__" alt="Theta-band PSD from 1 to 40Hz showing no artifact during sonication" loading="lazy" />
+                </div>
+                <div class="cs-handle" id="artifactHandle"><span class="cs-grip">&#8596;</span></div>
+                <span class="cs-tag left">Filtered</span>
+                <span class="cs-tag right">Unfiltered</span>
+              </div>
+              <figcaption><b>Drag the handle, or click a side.</b> Same epoch, same device. One is unfiltered (up to 125Hz), and the other is filtered via ICA (1-40Hz).</figcaption>
+            </figure>
+          </div>
+          <div class="fig highlight" style="padding:22px 24px; align-self:center;">
+            <p style="font-size:0.94rem;">Unfiltered, Open-LIFU's electrical footprint shows up as clean bands for the duration of the sonication window.</p>
+            <p style="font-size:0.88rem; color:var(--fg-soft);">Post-hoc, the noise showed stereotyped, non-neural spatial patterns with most energy above the theta band. <b>ICA and band-specific filtering removed it, with no residual artifact in theta.</b> Although results are exploratory, they are consistent with LIFU introducing negligible EEG artifact relative to TMS, DBS, or tDCS. The artifact is filterable, not just small enough to ignore.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabpanel" data-panel="timing">
+        <div class="two-col">
+          <div class="fig" style="padding:22px 24px;">
+            <p style="font-size:0.94rem;">All active trials passed the online/offline trigger-agreement test with error under 5ms, or within a single EEG sample. End-to-end latency, read directly off the Ch8 TTL loopback:</p>
+            <svg class="range-plot" viewBox="0 0 460 100" role="img" aria-label="Latency range plot: 329 to 513 milliseconds, mean 422, median 418">
+              <line x1="30" y1="62" x2="430" y2="62" stroke="var(--line)" stroke-width="1"></line>
+              <rect x="72" y="54" width="330" height="16" rx="8" fill="var(--bg-sunken)" stroke="var(--blue)" stroke-width="1"></rect>
+              <circle cx="222" cy="62" r="6" fill="var(--blue)"></circle>
+              <circle cx="212" cy="62" r="3.5" fill="var(--fg)"></circle>
+              <text x="30" y="86" font-family="var(--mono)" font-size="10" fill="var(--ink-faint)">300ms</text>
+              <text x="405" y="86" font-family="var(--mono)" font-size="10" fill="var(--ink-faint)">540ms</text>
+              <text x="222" y="34" font-family="var(--mono)" font-size="11" fill="var(--blue)" text-anchor="middle">mean 422ms</text>
+              <text x="212" y="16" font-family="var(--mono)" font-size="10" fill="var(--fg)" text-anchor="middle">median 418ms</text>
+            </svg>
+            <p style="margin-top:10px; font-size:0.8rem; color:var(--ink-faint);">&sigma; = 36.5ms across all sonications, range 329&ndash;513ms.</p>
+          </div>
+          <figure class="fig">
+            <img src="__IMG_RAW_TRACE__" alt="Thirteen scaled EEG channels during one sonication, showing the TTL trigger pulse" loading="lazy" />
+            <figcaption><b>Real-time monitoring.</b> Raw + processed channels, one sonication. The repeating spike is the attenuated TTL loopback used to timestamp each stimulation.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="tabpanel" data-panel="theta">
+        <div class="toggle-row" id="thetaToggle">
+          <button class="toggle-btn active" data-show="participant_1">Participant 1 &middot; N=9</button>
+          <button class="toggle-btn" data-show="participant_2">Participant 2 &middot; N=3</button>
+        </div>
+        <figure class="fig" style="margin:0; max-width:640px;">
+          <img class="swap-img active" data-key="participant_1" src="__IMG_THETA_P1__" alt="Participant 1 induced power changes, fired trials only, N=9" loading="lazy" />
+          <img class="swap-img" data-key="participant_2" src="__IMG_THETA_P2__" alt="Participant 2 induced power changes, fired trials only, N=3" loading="lazy" />
+          <figcaption id="thetaCaption"><b>Participant 1</b>: theta suppressed roughly 0.6 (relative power) for ~12s following active sonication, across 9 fired trials.</figcaption>
+        </figure>
+      </div>
+
+      <div class="tabpanel" data-panel="erp">
+        <figure class="fig" style="max-width:640px;">
+          <img src="__IMG_ERP__" alt="Event-related potentials for Participant 1 and Participant 2 across all four runs combined, seven EEG channels" loading="lazy" />
+          <figcaption>Reliable time-locked responses across seven channels for both <b>Participant 1</b> (N<sub>ave</sub>=291) and <b>Participant 2</b> (N<sub>ave</sub>=365): the acquisition chain preserves genuine time-locked signal alongside the closed-loop workflow.</figcaption>
+        </figure>
+      </div>
+
+      <div class="tabpanel" data-panel="behavior">
+        <div class="two-col">
+          <div class="fig" style="padding:22px 24px;">
+            <h3 style="font-size:0.95rem; margin-bottom:4px;">Participant 1: d&prime; by run</h3>
+            <p class="bar-hint">Click a run for hit rate, false alarms, criterion, and bias.</p>
+            <div class="bar-block">
+              <div class="bar-item"><button class="bar-row" data-detail="H 0.4000 &middot; F 0.0952 &middot; M 0.6000 &middot; R 0.9048 &middot; c 0.7813 &middot; &beta; 2.2816"><span class="rlabel">Sham &middot; r1</span><div class="bar-track"><div class="bar-fill sham" style="width:35%;"></div></div><span class="rval">1.06</span></button><div class="bar-detail"></div></div>
+              <div class="bar-item"><button class="bar-row" data-detail="H 0.6087 &middot; F 0.0897 &middot; M 0.3913 &middot; R 0.9103 &middot; c 0.5332 &middot; &beta; 2.3699"><span class="rlabel">Active &middot; r2</span><div class="bar-track"><div class="bar-fill active" style="width:54%;"></div></div><span class="rval">1.62</span></button><div class="bar-detail"></div></div>
+              <div class="bar-item"><button class="bar-row" data-detail="H 0.8462 &middot; F 0.0566 &middot; M 0.1538 &middot; R 0.9434 &middot; c 0.2819 &middot; &beta; 2.0837"><span class="rlabel">Sham &middot; r3</span><div class="bar-track"><div class="bar-fill sham" style="width:87%;"></div></div><span class="rval">2.60</span></button><div class="bar-detail"></div></div>
+              <div class="bar-item"><button class="bar-row" data-detail="H 0.8095 &middot; F 0.0375 &middot; M 0.1905 &middot; R 0.9625 &middot; c 0.4522 &middot; &beta; 3.3241"><span class="rlabel">Active &middot; r4</span><div class="bar-track"><div class="bar-fill active" style="width:89%;"></div></div><span class="rval">2.66</span></button><div class="bar-detail"></div></div>
+            </div>
+            <div class="legend-row"><span><i style="background:var(--ink-faint);"></i>Sham</span><span><i style="background:var(--blue);"></i>Active</span></div>
+            <p style="margin-top:10px; font-size:0.86rem;">Improved across runs; highest sensitivity during the second active block.</p>
+          </div>
+          <div class="fig" style="padding:22px 24px;">
+            <h3 style="font-size:0.95rem; margin-bottom:4px;">Participant 2: d&prime; by run <span style="font-weight:400; color:var(--ink-faint); font-size:0.74rem;">(run 3 excluded)</span></h3>
+            <p class="bar-hint">Click a run for hit rate, false alarms, criterion, and bias.</p>
+            <div class="bar-block">
+              <div class="bar-item"><button class="bar-row" data-detail="H 0.3043 &middot; F 0.0769 &middot; M 0.6957 &middot; R 0.9231 &middot; c 0.9690 &middot; &beta; 2.4249"><span class="rlabel">Active &middot; r1</span><div class="bar-track"><div class="bar-fill active" style="width:31%;"></div></div><span class="rval">0.91</span></button><div class="bar-detail"></div></div>
+              <div class="bar-item"><button class="bar-row" data-detail="H 0.5714 &middot; F 0.0375 &middot; M 0.4286 &middot; R 0.9625 &middot; c 0.8002 &middot; &beta; 4.8010"><span class="rlabel">Sham &middot; r2</span><div class="bar-track"><div class="bar-fill sham" style="width:67%;"></div></div><span class="rval">1.96</span></button><div class="bar-detail"></div></div>
+              <div class="bar-item"><button class="bar-row" data-detail="H 0.2381 &middot; F 0.0125 &middot; M 0.7619 &middot; R 0.9875 &middot; c 1.4769 &middot; &beta; 9.5654"><span class="rlabel">Sham &middot; r4</span><div class="bar-track"><div class="bar-fill sham" style="width:52%;"></div></div><span class="rval">1.53</span></button><div class="bar-detail"></div></div>
+            </div>
+            <div class="legend-row"><span><i style="background:var(--ink-faint);"></i>Sham</span><span><i style="background:var(--blue);"></i>Active</span></div>
+            <p style="margin-top:10px; font-size:0.86rem;">Weaker on active runs than sham. With n=2, individual variability dominates.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIMITS -->
+  <section class="block" id="limits">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Honest Limits</span>
+        <h2>What n=2 can't tell you yet.</h2>
+      </div>
+      <div class="limits-list">
+        <div class="limit-item"><b>No skull correction</b>: beam steering wasn't adjusted for individual bone thickness.</div>
+        <div class="limit-item"><b>Scalp-based targeting</b>: for non-MRI participants is less precise than structural guidance.</div>
+        <div class="limit-item"><b>n=2</b>: every physiological finding here is descriptive, not inferential.</div>
+        <div class="limit-item"><b>MI capped at 0.4</b>: this pilot, well inside the approved envelope, for tolerability.</div>
+        <div class="limit-item"><b>Slicer path (~420ms)</b>: is the latency bottleneck; direct Python runs at ~170ms.</div>
+        <div class="limit-item"><b>Intermittent UART faults</b>: and rare high-voltage-without-sonication events required retries.</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Conducted under the approved <b style="color:#fff;">OW-DEV-001</b> human feasibility and product development protocol. Limited to device performance evaluation, closed-loop workflow testing, signal acquisition, engineering validation, and participant tolerability assessment &mdash; not intended to evaluate diagnosis, treatment, clinical efficacy, or cognitive enhancement.</p>
+
+    <details class="ack">
+      <summary>+ Full acknowledgments</summary>
+      <div class="ack-grid">
+        <div>
+          <h5>Design &amp; guidance</h5>
+          <p><b>Dave</b> &mdash; protocol feedback, participation, consent.</p>
+          <p><b>Scott</b> &mdash; participation, neuroscience insight.</p>
+          <p><b>Reza</b> &mdash; sonication solution setup.</p>
+        </div>
+        <div>
+          <h5>Software</h5>
+          <p><b>Ethan</b> &mdash; Git, workflow, debugging.</p>
+          <p><b>Alex</b> &mdash; OpenLIFU Python code.</p>
+        </div>
+        <div>
+          <h5>Hardware</h5>
+          <p><b>Muhammad</b> &mdash; transducer testing.</p>
+          <p><b>Tiffany, Mykhaylo, Henry</b> &mdash; trigger board.</p>
+          <p><b>Seemal</b> &mdash; device setup, Slicer.</p>
+        </div>
+        <div>
+          <h5>Additional</h5>
+          <p><b>Morgan</b> &mdash; loaned the headset.</p>
+          <p><b>Dan, Soren, Peter, David</b> &mdash; setup help.</p>
+        </div>
+      </div>
+    </details>
+
+    <div class="foot-meta">
+      <span>Janet Shin &middot; Openwater Research</span>
+      <span>Interactive research poster</span>
+    </div>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt="" /></div>
+
+<script>
+  // ---- nav scroll-spy + smooth scroll ----
+  (function(){
+    var links = Array.prototype.slice.call(document.querySelectorAll('.nav-pill'));
+    var map = links.map(function(a){ return { a:a, el: document.getElementById(a.getAttribute('href').slice(1)) }; }).filter(function(m){return m.el;});
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        var m = map.find(function(x){return x.el===entry.target;});
+        if(!m) return;
+        if(entry.isIntersecting){ links.forEach(function(l){l.classList.remove('active');}); m.a.classList.add('active'); }
+      });
+    }, {rootMargin:'-40% 0px -55% 0px', threshold:0});
+    map.forEach(function(m){obs.observe(m.el);});
+    links.forEach(function(a){
+      a.addEventListener('click', function(e){
+        e.preventDefault();
+        var el = document.getElementById(a.getAttribute('href').slice(1));
+        if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+      });
+    });
+  })();
+
+  // ---- count-up stats ----
+  (function(){
+    var stats = document.querySelectorAll('.stat .num');
+    var done = new WeakSet();
+    function animate(el){
+      var text = el.textContent.trim();
+      var m = text.match(/^([<>]?)(\d+(?:\.\d+)?)(.*)$/);
+      if(!m){ return; }
+      var prefix = m[1], target = parseFloat(m[2]), suffix = m[3];
+      if(/\d/.test(suffix)){ return; }
+      var start = performance.now(), dur = 800;
+      function tick(now){
+        var p = Math.min(1, (now-start)/dur);
+        var eased = 1-Math.pow(1-p,3);
+        var val = target * eased;
+        var display = (Number.isInteger(target) ? Math.round(val) : val.toFixed(1));
+        el.textContent = prefix + display + suffix;
+        if(p<1) requestAnimationFrame(tick);
+        else el.textContent = prefix + (Number.isInteger(target)?target:target.toFixed(1)) + suffix;
+      }
+      requestAnimationFrame(tick);
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting && !done.has(e.target)){
+          done.add(e.target);
+          animate(e.target);
+        }
+      });
+    }, {threshold:0.4});
+    stats.forEach(function(s){io.observe(s);});
+  })();
+
+  // ---- pipeline stepper accordion ----
+  (function(){
+    document.querySelectorAll('#stepper .step-head').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var step = btn.closest('.step');
+        var wasOpen = step.classList.contains('open');
+        document.querySelectorAll('#stepper .step').forEach(function(s){s.classList.remove('open');});
+        if(!wasOpen) step.classList.add('open');
+        // ResizeObserver doesn't reliably fire on display:none -> block in every engine;
+        // force any canvas inside (e.g. the trigger simulator) to re-measure once visible.
+        setTimeout(function(){ window.dispatchEvent(new Event('resize')); }, 60);
+      });
+    });
+  })();
+
+  // ---- results tabs ----
+  (function(){
+    var btns = document.querySelectorAll('#tabbar .tabbtn');
+    var panels = document.querySelectorAll('.tabpanel');
+    btns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        btns.forEach(function(b){b.classList.remove('active');});
+        panels.forEach(function(p){p.classList.remove('active');});
+        btn.classList.add('active');
+        document.querySelector('.tabpanel[data-panel="'+btn.dataset.tab+'"]').classList.add('active');
+      });
+    });
+  })();
+
+  // ---- arrow-key navigation for button groups (tabs, chips) ----
+  function wireArrowNav(containerEl, btnSelector){
+    if(!containerEl) return;
+    var btns = Array.prototype.slice.call(containerEl.querySelectorAll(btnSelector));
+    containerEl.addEventListener('keydown', function(e){
+      if(e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      var i = btns.indexOf(document.activeElement);
+      if(i === -1) return;
+      e.preventDefault();
+      var next = e.key === 'ArrowRight' ? (i+1) % btns.length : (i-1+btns.length) % btns.length;
+      btns[next].focus();
+      btns[next].click();
+    });
+  }
+  wireArrowNav(document.getElementById('tabbar'), '.tabbtn');
+
+  // ---- behavioral bar rows: click to expand full stats ----
+  (function(){
+    document.querySelectorAll('.bar-item').forEach(function(item){
+      var btn = item.querySelector('.bar-row');
+      var detail = item.querySelector('.bar-detail');
+      btn.addEventListener('click', function(){
+        var open = item.classList.toggle('open');
+        if(open) detail.innerHTML = btn.dataset.detail;
+      });
+    });
+  })();
+
+  // ---- compare slider (artifact before/after) ----
+  (function(){
+    var slider = document.getElementById('artifactSlider');
+    if(!slider) return;
+    var overlay = document.getElementById('artifactOverlay');
+    var overlayImg = document.getElementById('artifactOverlayImg');
+    var handle = document.getElementById('artifactHandle');
+    var pos = 50;
+    function layoutImg(){
+      overlayImg.style.width = slider.clientWidth + 'px';
+    }
+    function setPos(p){
+      pos = Math.max(0, Math.min(100, p));
+      overlay.style.width = pos + '%';
+      handle.style.left = pos + '%';
+      slider.setAttribute('aria-valuenow', Math.round(pos));
+      layoutImg();
+    }
+    function posFromClientX(clientX){
+      var rect = slider.getBoundingClientRect();
+      return ((clientX - rect.left) / rect.width) * 100;
+    }
+    var dragging = false;
+    slider.addEventListener('pointerdown', function(e){
+      dragging = true;
+      slider.setPointerCapture(e.pointerId);
+      setPos(posFromClientX(e.clientX));
+    });
+    slider.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      setPos(posFromClientX(e.clientX));
+    });
+    slider.addEventListener('pointerup', function(){ dragging = false; });
+    slider.addEventListener('pointercancel', function(){ dragging = false; });
+    slider.addEventListener('keydown', function(e){
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); setPos(pos - 5); }
+      else if(e.key === 'ArrowRight'){ e.preventDefault(); setPos(pos + 5); }
+      else if(e.key === 'Home'){ e.preventDefault(); setPos(0); }
+      else if(e.key === 'End'){ e.preventDefault(); setPos(100); }
+    });
+    document.querySelectorAll('.cs-tag').forEach(function(tag){
+      tag.style.pointerEvents = 'auto';
+      tag.style.cursor = 'pointer';
+      tag.addEventListener('click', function(e){
+        e.stopPropagation();
+        setPos(tag.classList.contains('left') ? 92 : 8);
+      });
+    });
+    window.addEventListener('resize', layoutImg);
+    if(overlayImg.complete) layoutImg(); else overlayImg.addEventListener('load', layoutImg);
+    setPos(50);
+  })();
+
+  // ---- live trigger-loop simulator ----
+  (function(){
+    var canvas = document.getElementById('simCanvas');
+    if(!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var badge = document.getElementById('simBadge');
+    var fireCountEl = document.getElementById('simFireCount');
+    var toggleBtn = document.getElementById('simToggle');
+    var resetBtn = document.getElementById('simReset');
+    var dots = Array.prototype.slice.call(document.querySelectorAll('#simGate .gate-dot'));
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var THRESH = 1.5, COOLDOWN_MS = 5000, MAX_FIRES = 10;
+    var w, h, dpr = Math.min(window.devicePixelRatio||1, 2);
+    var N = 160, series = new Array(N).fill(0.15);
+    var running = !reduced;
+    var fireCount = 0, cooldownUntil = 0, badgeFireUntil = 0, burst = 0;
+
+    function resize(){
+      w = canvas.clientWidth; h = 130;
+      if(w <= 0) return;
+      canvas.width = w*dpr; canvas.height = h*dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      draw();
+    }
+    window.addEventListener('resize', resize);
+    if(window.ResizeObserver){
+      new ResizeObserver(resize).observe(canvas);
+    }
+
+    function nextValue(prev){
+      var drift = (Math.random()-0.5)*0.22;
+      var val = prev*0.7 + drift;
+      if(burst > 0){ val += 0.55; burst--; }
+      else if(Math.random() < 0.012){ burst = 8 + Math.floor(Math.random()*10); }
+      return Math.max(-0.3, Math.min(2.4, val));
+    }
+
+    function setDot(i, pass){
+      dots[i].classList.toggle('pass', pass);
+    }
+
+    function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+    function draw(){
+      var cBlue = cssVar('--blue') || '#4D9FFF';
+      var cBlueDeep = cssVar('--blue-deep') || '#2563EB';
+      var cFaint = cssVar('--ink-faint') || '#8A93A6';
+      ctx.clearRect(0,0,w,h);
+      var padL=8, padR=8, plotW=w-padL-padR;
+      var yTop=10, yBot=h-14, plotH=yBot-yTop;
+      function yFor(v){ return yBot - ((v+0.5)/(2.9))*plotH; }
+
+      ctx.strokeStyle = cFaint;
+      ctx.globalAlpha = 0.4;
+      ctx.setLineDash([4,4]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      var ty = yFor(THRESH);
+      ctx.moveTo(padL, ty); ctx.lineTo(w-padR, ty);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = cFaint;
+      ctx.font = "10px Consolas, 'SF Mono', monospace";
+      ctx.fillText('z = 1.5', padL+2, ty-4);
+      ctx.globalAlpha = 1;
+
+      ctx.beginPath();
+      series.forEach(function(v,i){
+        var x = padL + (i/(N-1))*plotW;
+        var y = yFor(v);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.strokeStyle = cBlueDeep;
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      var last = series[series.length-1];
+      var lx = padL + plotW, ly = yFor(last);
+      ctx.beginPath();
+      ctx.arc(lx, ly, 4, 0, Math.PI*2);
+      ctx.fillStyle = last > THRESH ? cBlue : cBlueDeep;
+      ctx.fill();
+    }
+
+    var lastT = 0;
+    function tick(t){
+      if(running && t - lastT > 60){
+        lastT = t;
+        series.push(nextValue(series[series.length-1]));
+        series.shift();
+        var z = series[series.length-1];
+        var now = performance.now();
+        var crossed = z > THRESH;
+        var cooldownClear = now >= cooldownUntil;
+        var budgetLeft = fireCount < MAX_FIRES;
+        setDot(2, crossed);
+        setDot(4, cooldownClear);
+        setDot(5, budgetLeft);
+        if(crossed && cooldownClear && budgetLeft){
+          fireCount++;
+          fireCountEl.textContent = fireCount;
+          cooldownUntil = now + COOLDOWN_MS;
+          badgeFireUntil = now + 5000;
+        }
+        badge.classList.toggle('fire', now < badgeFireUntil);
+        badge.textContent = now < badgeFireUntil ? 'LIFU_ON' : 'ARMED';
+        draw();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    toggleBtn.addEventListener('click', function(){
+      running = !running;
+      toggleBtn.textContent = running ? 'Pause' : 'Play simulation';
+    });
+    resetBtn.addEventListener('click', function(){
+      series = new Array(N).fill(0.15);
+      fireCount = 0; cooldownUntil = 0; badgeFireUntil = 0; burst = 0;
+      fireCountEl.textContent = '0';
+      badge.classList.remove('fire'); badge.textContent = 'ARMED';
+      dots.forEach(function(d,i){ setDot(i, i!==2); });
+      draw();
+    });
+
+    resize();
+    toggleBtn.textContent = running ? 'Pause' : 'Play simulation';
+    draw();
+    requestAnimationFrame(tick);
+  })();
+
+  // ---- generic image swap toggles ----
+  function wireSwap(containerId, imgGroupSelector, captionId, captions){
+    var container = document.getElementById(containerId);
+    if(!container) return;
+    container.querySelectorAll('.toggle-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        container.querySelectorAll('.toggle-btn').forEach(function(b){b.classList.remove('active');});
+        btn.classList.add('active');
+        document.querySelectorAll(imgGroupSelector).forEach(function(img){
+          img.classList.toggle('active', img.dataset.key === btn.dataset.show);
+        });
+        if(captionId && captions){
+          document.getElementById(captionId).innerHTML = captions[btn.dataset.show];
+        }
+      });
+    });
+  }
+  wireSwap('thetaToggle', '.tabpanel[data-panel="theta"] .swap-img', 'thetaCaption', {
+    participant_1: '<b>Participant 1</b> — theta suppressed roughly 0.6 (relative power) for ~12s following active sonication, across 9 fired trials.',
+    participant_2: '<b>Participant 2</b> — theta suppressed roughly −2 (relative power) for ~18s following active sonication, across 3 fired trials.'
+  });
+
+  // ---- lightbox ----
+  (function(){
+    var lb = document.getElementById('lightbox'), lbImg = document.getElementById('lightboxImg');
+    document.querySelectorAll('.fig img').forEach(function(img){
+      img.addEventListener('click', function(){ lbImg.src = img.src; lbImg.alt = img.alt; lb.classList.add('open'); });
+    });
+    lb.addEventListener('click', function(){ lb.classList.remove('open'); });
+    window.addEventListener('keydown', function(e){ if(e.key==='Escape') lb.classList.remove('open'); });
+  })();
+
+  // ---- hero wave canvas ----
+  (function(){
+    var canvas = document.getElementById('waveCanvas');
+    var ctx = canvas.getContext('2d');
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var w,h,dpr=Math.min(window.devicePixelRatio||1,2);
+    function resize(){
+      w = canvas.clientWidth; h = canvas.clientHeight;
+      canvas.width = w*dpr; canvas.height = h*dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+    var cx = ()=> w*0.78, cy = ()=> h*0.28;
+    function frame(t){
+      ctx.clearRect(0,0,w,h);
+      var rings = 5;
+      for(var i=0;i<rings;i++){
+        var phase = reduced ? i/rings : ((t/2600)+i/rings)%1;
+        var r = phase * Math.max(w,h) * 0.85;
+        var alpha = (1-phase) * 0.35;
+        ctx.beginPath();
+        ctx.arc(cx(), cy(), r, 0, Math.PI*2);
+        ctx.strokeStyle = 'rgba(77,159,255,'+alpha.toFixed(3)+')';
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+      }
+      if(!reduced) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+</script>

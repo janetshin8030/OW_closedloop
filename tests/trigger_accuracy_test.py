@@ -40,12 +40,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 XDF_PATH = (
     Path(__file__).resolve().parent.parent
     / "xdf_data"
-    / "sub-dave_run_2"
+    / "sub-participant_1_run_2"
     / "ses-1"
     / "eeg"
-    / "sub-dave_run_2_ses-1_task-dave_run_2_run-001_eeg.xdf"
+    / "sub-participant_1_run_2_ses-1_task-participant_1_run_2_run-001_eeg.xdf"
 )
-TRIAL_NAME = 'dave_run_4'
+TRIAL_NAME = 'participant_1_run_4'
 EEG_STREAM_NAME = "EEG_gpype"
 TRIGGER_STREAM_NAME = "EEG_LIFU_events"
 OUTPUT_DIR = Path(__file__).resolve().parent /"trigger_accuracy_plots"/ f"{TRIAL_NAME}"
@@ -53,9 +53,9 @@ OUTPUT_DIR = Path(__file__).resolve().parent /"trigger_accuracy_plots"/ f"{TRIAL
 WINDOW_SAMPLES = 500  # total frames per window (half before LIFU_ON, half after)
 TRIGGER_DETECT_MAD_THRESHOLD = 100  # spike must exceed the pre-marker baseline median by this many MADs
 
-# All recorded dave/scott runs, for the standalone `python trigger_accuracy_test.py` sweep below.
+# All recorded participant_1/participant_2 runs, for the standalone `python trigger_accuracy_test.py` sweep below.
 XDF_ROOT = REPO_ROOT / "xdf_data"
-PARTICIPANTS = ["dave", "scott"]
+PARTICIPANTS = ["participant_1", "participant_2"]
 RUNS = [1, 2, 3, 4]
 
 
@@ -217,7 +217,7 @@ def test_recorded_trigger_accuracy(tmp_path):
 
 
 def _sweep_all_runs():
-    """Runs every dave/scott recording through `_analyze_recording` and prints
+    """Runs every participant_1/participant_2 recording through `_analyze_recording` and prints
     the latency for every sonication found, across every run."""
     all_rows = []
     for participant in PARTICIPANTS:
